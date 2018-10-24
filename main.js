@@ -30,9 +30,10 @@ const createPopup = () => {
   button.addEventListener('click', async (event) => {
     const blob = await myChart.getImageAsBlob();
     console.log(blob);
-    const binStr = await blobToBinaryString(blob);
-    console.log(binStr);
-    uploadBlob(blob);
+    // const binStr = await blobToBinaryString(blob);
+    // console.log(binStr);
+    const fileKey = await uploadBlob(blob);
+    postComment(fileKey);
   });
 
   popup.appendChild(button);
@@ -47,13 +48,29 @@ const uploadBlob = (blob) => {
 
   const url = kintone.api.url('/k/v1/file');
 
-  fetch(url, {
+  return fetch(url, {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
     body: formData,
   }).then(resp => {
     return resp.json();
-  }).then(console.log).catch(console.error);
+  }).then(json => {
+    console.log(json);
+    return json['fileKey'];
+  }).catch(console.error);
+};
+
+// FIXME そのうち消す
+const postComment = (fileKey) => {
+  const SPACE = 1255;
+  const THREAD = 3707;
+  kintone.api('/k/v1/space/thread/comment', 'POST', {
+    space: SPACE 
+    thread: THREAD,
+    comment: {
+      files: [{fileKey}]
+    },
+  }, console.log, console.error);
 };
 
 class MyChart {
