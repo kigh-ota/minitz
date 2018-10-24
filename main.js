@@ -22,10 +22,18 @@ const createPopup = () => {
   popup.textContent = 'Hello minitz!';
 
   const myChartWrapper = document.createElement('DIV');
-  popup.appendChild(myChartWrapper);
   const myChart = new MyChart([12, 19, 3, 5, 2, 3]);
   myChart.render(myChartWrapper);
 
+  const button = document.createElement('BUTTON');
+  button.innerText = 'Image';
+  button.addEventListener('click', async (event) => {
+    const bin = await myChart.getImageAsBinaryString();
+    console.log(bin);
+  });
+
+  popup.appendChild(button);
+  popup.appendChild(myChartWrapper);
   document.body.appendChild(popup);
 }
 
@@ -64,6 +72,21 @@ class MyChart {
 
   render(parentEl) {
     parentEl.appendChild(this.canvasEl_);
+  }
+
+  getImageAsBinaryString() {
+    return new Promise((resolve, reject) => {
+      if (!this.canvasEl_) {
+        reject("No canvas element");
+      }
+      this.canvasEl_.toBlob(blob => {
+        const reader = new FileReader();
+        reader.addEventListener('loadend', () => {
+          resolve(reader.result);
+        });
+        reader.readAsBinaryString(blob);
+      });
+    });
   }
 }
 
