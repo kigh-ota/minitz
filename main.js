@@ -30,8 +30,6 @@ const createPopup = () => {
   button.addEventListener('click', async (event) => {
     const blob = await myChart.getImageAsBlob();
     console.log(blob);
-    // const binStr = await blobToBinaryString(blob);
-    // console.log(binStr);
     const fileKey = await uploadBlob(blob);
     postComment(fileKey);
   });
@@ -121,16 +119,6 @@ class MyChart {
     });
   }
 }
-
-const blobToBinaryString = (blob) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('loadend', () => {
-      resolve(reader.result);
-    });
-    reader.readAsBinaryString(blob);
-  });
-};
 
 const showPopup = () => {
   document.getElementsByClassName(POPUP_CSS_CLASS)[0].classList.remove(POPUP_HIDDEN_CSS_CLASS);
