@@ -63,7 +63,7 @@ const postComment = (fileKey) => {
   const SPACE = 1255;
   const THREAD = 3707;
   kintone.api('/k/v1/space/thread/comment', 'POST', {
-    space: SPACE 
+    space: SPACE,
     thread: THREAD,
     comment: {
       files: [{fileKey}]
