@@ -27,8 +27,10 @@ const fetchComments = (dayCount) => {
       const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
       return {
         date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
-        myCommentCount: 0,
-        othersCommentCount: 0,
+        commentCount: 0,
+        commentedCount: 0,
+        likeCount: 0,
+        likedCount: 0,
       }
     });
     const posts = resp.result.items.filter(item => {
@@ -52,9 +54,13 @@ const fetchComments = (dayCount) => {
       if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
         const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
         if (comment.creator.id === kintone.getLoginUser().id) {
-          data[i].myCommentCount++;
+          data[i].commentCount++;
+          data[i].likedCount += comment.likeCount;
         } else {
-          data[i].othersCommentCount++;
+          data[i].commentedCount++;
+        }
+        if (comment.liked) {
+          data[i].likeCount++;
         }
       }
     });
