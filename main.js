@@ -1,17 +1,15 @@
-console.log('Hello minitz!');
-
 const POPUP_CSS_CLASS = 'minitz-popup';
 const POPUP_HIDDEN_CSS_CLASS = 'hidden';
 
 let isInPeople = false;
 const onHashChange = () => {
-  // TODO: 自分のピープルだけにする
-  if (!isInPeople && document.location.hash.startsWith('#/people/user/')) {
-    console.log('enter the people page.');
+  const code = kintone.getLoginUser().code;
+  if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
+    console.log('enter my people page.');
     showPopup();
     isInPeople = true;
-  } else if (isInPeople && !document.location.hash.startsWith('#/people/user/')) {
-    console.log('leave the people page.')
+  } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
+    console.log('leave my people page.')
     hidePopup();
     isInPeople = false;
   }

@@ -5,8 +5,9 @@
   "content_scripts": [
     {
       "matches": ["https://*.cybozu.com/k/"],
-      "js": ["main.js"],
+      "js": ["bootstrap.js"],
       "css": ["main.css"]
     }
-  ]
+  ],
+  "web_accessible_resources": ["main.js"]
 }
