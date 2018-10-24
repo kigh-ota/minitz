@@ -26,7 +26,7 @@ const fetchComments = (dayCount) => {
     let data = [...Array(dayCount).keys()].map(i => {
       const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
       return {
-        date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
+        date: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
         commentCount: 0,
         commentedCount: 0,
         likeCount: 0,
@@ -75,8 +75,10 @@ const createPopup = () => {
   popup.textContent = 'Hello minitz!';
   
   const myChartWrapper = document.createElement('DIV');
-  const myChart = new MyChart([12, 19, 3, 5, 2, 3]);
-  myChart.render(myChartWrapper);
+  fetchComments(7).then(data => {
+    const myChart = new MyChart(data.reverse());
+    myChart.render(myChartWrapper);
+  });
   
   const button = document.createElement('BUTTON');
   button.innerText = 'Image';
@@ -130,21 +132,31 @@ class MyChart {
     this.chart_ = new Chart(this.canvasEl_, {
       type: 'bar',
       data: {
-        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-        datasets: [{
-          label: '# of Votes',
-          data: data,
-          backgroundColor: ['rgba(255, 99, 132, 0.2)'],
-          borderColor: ['rgba(255,99,132,1)'],
-          borderWidth: 1
-        }]
+        labels: data.map(item => item.date.substr(5)),
+        datasets: [
+          {
+            label: 'comment',
+            data: data.map(item => item.commentCount),
+            backgroundColor: ['rgba(255, 99, 132, 0.2)'],
+            borderColor: ['rgba(255,99,132,1)'],
+            borderWidth: 1
+          },
+          {
+            label: 'commented',
+            data: data.map(item => item.commentedCount),
+            //backgroundColor: ['rgba(255, 99, 132, 0.2)'],
+            //borderColor: ['rgba(255,99,132,1)'],
+            borderWidth: 1
+          },
+        ]
       },
       options: {
         scales: {
           yAxes: [{
             ticks: {
-              beginAtZero:true,
-            }
+              beginAtZero: true,
+            },
+            stacked: true,
           }]
         },
         elements: {
