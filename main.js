@@ -1,16 +1,15 @@
-const POPUP_CSS_CLASS = 'minitz-popup';
-const POPUP_HIDDEN_CSS_CLASS = 'hidden';
-
 let isInPeople = false;
+let popup = null;
+
 const onHashChange = () => {
   const code = kintone.getLoginUser().code;
   if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
     console.log('enter my people page.');
-    showPopup();
+    popup.show();
     isInPeople = true;
   } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
     console.log('leave my people page.')
-    hidePopup();
+    popup.hide();
     isInPeople = false;
   }
 };
@@ -68,31 +67,54 @@ const fetchComments = (dayCount) => {
   });
 }
 
-const createPopup = () => {
-  const popup = document.createElement('DIV');
-  popup.classList.add(POPUP_CSS_CLASS);
-  popup.classList.add(POPUP_HIDDEN_CSS_CLASS);
-  popup.textContent = 'Hello minitz!';
-  
-  const myChartWrapper = document.createElement('DIV');
-  let myChart;
-  fetchComments(7).then(data => {
-    myChart = new MyChart(data.reverse());
-    myChart.render(myChartWrapper);
-  });
-  
-  const button = document.createElement('BUTTON');
-  button.innerText = 'Image';
-  button.addEventListener('click', async (event) => {
-    const blob = await myChart.getImageAsBlob();
-    console.log(blob);
-    const fileKey = await uploadBlob(blob);
-    postToPeople(fileKey);
-  });
-  
-  popup.appendChild(button);
-  popup.appendChild(myChartWrapper);
-  document.body.appendChild(popup);
+class Component {
+  render(parentEl) {
+    parentEl.appendChild(this.el_);
+  }
+}
+
+class Popup extends Component {
+  static get CSS_CLASS() {
+    return 'minitz-popup';
+  }
+  static get HIDDEN_CSS_CLASS() {
+    return 'hidden';
+  }
+
+  constructor() {
+    super();
+    this.el_ = document.createElement('DIV');
+    this.el_.classList.add(Popup.CSS_CLASS);
+    this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
+    this.el_.textContent = 'Hello minitz!';
+    
+    const chartWrapper = document.createElement('DIV');
+    this.chart_ = null;
+    fetchComments(7).then(data => {
+      this.chart_ = new MyChart(data.reverse());
+      this.chart_.render(chartWrapper);
+    });
+    
+    const button = document.createElement('BUTTON');
+    button.innerText = 'Post Image to People';
+    button.addEventListener('click', async (event) => {
+      const blob = await this.chart_.getImageAsBlob();
+      console.log(blob);
+      const fileKey = await uploadBlob(blob);
+      postToPeople(fileKey);
+    });
+    
+    this.el_.appendChild(button);
+    this.el_.appendChild(chartWrapper);
+  }
+
+  show() {
+    this.el_.classList.remove(Popup.HIDDEN_CSS_CLASS);
+  }
+
+  hide() {
+    this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
+  }
 }
 
 const uploadBlob = (blob) => {
@@ -126,10 +148,11 @@ const postToPeople = (fileKey) => {
     }, console.log, console.error);
 };
 
-class MyChart {
+class MyChart extends Component {
   constructor(data) {
-    this.canvasEl_ = document.createElement('CANVAS');
-    this.chart_ = new Chart(this.canvasEl_, {
+    super();
+    this.el_ = document.createElement('CANVAS');
+    this.chart_ = new Chart(this.el_, {
       type: 'bar',
       data: {
         labels: data.map(item => item.date.substr(5)),
@@ -169,32 +192,21 @@ class MyChart {
     });
   }
   
-  render(parentEl) {
-    parentEl.appendChild(this.canvasEl_);
-  }
-  
   getImageAsBlob() {
     return new Promise((resolve, reject) => {
-      if (!this.canvasEl_) {
+      if (!this.el_) {
         reject("No canvas element");
       }
-      this.canvasEl_.toBlob(blob => {
+      this.el_.toBlob(blob => {
         resolve(blob);
       });
     });
   }
 }
 
-const showPopup = () => {
-  document.getElementsByClassName(POPUP_CSS_CLASS)[0].classList.remove(POPUP_HIDDEN_CSS_CLASS);
-};
-
-const hidePopup = () => {
-  document.getElementsByClassName(POPUP_CSS_CLASS)[0].classList.add(POPUP_HIDDEN_CSS_CLASS);
-}
-
 if ('onhashchange' in window) {
-  createPopup();
+  popup = new Popup();
+  popup.render(document.body);
   window.addEventListener('hashchange', onHashChange);
   onHashChange();
 }
