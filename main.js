@@ -28,14 +28,38 @@ const createPopup = () => {
   const button = document.createElement('BUTTON');
   button.innerText = 'Image';
   button.addEventListener('click', async (event) => {
-    const bin = await myChart.getImageAsBinaryString();
-    console.log(bin);
+    const blob = await myChart.getImageAsBlob();
+    console.log(blob);
+    const binStr = await blobToBinaryString(blob);
+    console.log(binStr);
+    uploadBlob(blob);
   });
 
   popup.appendChild(button);
   popup.appendChild(myChartWrapper);
   document.body.appendChild(popup);
 }
+
+const uploadBlob = (blob) => {
+  const formData = new FormData();
+  formData.append('__REQUEST_TOKEN__', kintone.getRequestToken());
+  formData.append('file', blob, 'hoge.png');
+
+  const url = kintone.api.url('/k/v1/file');
+
+  // TODO use fetch API
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url);
+  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+        console.log(JSON.parse(xhr.responseText));
+    } else {
+        console.error(JSON.parse(xhr.responseText));
+    }
+  };
+  xhr.send(formData);
+};
 
 class MyChart {
   constructor(data) {
@@ -74,21 +98,27 @@ class MyChart {
     parentEl.appendChild(this.canvasEl_);
   }
 
-  getImageAsBinaryString() {
+  getImageAsBlob() {
     return new Promise((resolve, reject) => {
       if (!this.canvasEl_) {
         reject("No canvas element");
       }
       this.canvasEl_.toBlob(blob => {
-        const reader = new FileReader();
-        reader.addEventListener('loadend', () => {
-          resolve(reader.result);
-        });
-        reader.readAsBinaryString(blob);
+        resolve(blob);
       });
     });
   }
 }
+
+const blobToBinaryString = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('loadend', () => {
+      resolve(reader.result);
+    });
+    reader.readAsBinaryString(blob);
+  });
+};
 
 const showPopup = () => {
   document.getElementsByClassName(POPUP_CSS_CLASS)[0].classList.remove(POPUP_HIDDEN_CSS_CLASS);
