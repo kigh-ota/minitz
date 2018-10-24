@@ -19,8 +19,7 @@ const fetchComments = (dayCount) => {
   return kintone.api('/k/api/people/user/post/list', 'POST', {
     threadId: kintone.getLoginUser().id,
     size: 100,
-  }).then(resp => {
-    console.log(resp);
+  }).then(async resp => {
     const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
     const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     // data[n]: n日前
@@ -32,16 +31,27 @@ const fetchComments = (dayCount) => {
         othersCommentCount: 0,
       }
     });
-    let comments = resp.result.items.slice();
-    // TODO: 他n件のコメントも含める
-    resp.result.items.forEach(item => {
-      comments.push(...item.comments);
+    const posts = resp.result.items.filter(item => {
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= new Date(item.commentedAt);
     });
-    comments.forEach(item => {
-      const date = new Date(item.createdAt);
+    let comments = posts.slice();
+    for (post of posts) {
+      if (post.comments.length < post.commentCount) {
+        await kintone.api('/k/api/people/user/comment/list', 'POST', {
+          postId: post.id,
+          size: 200,
+        }).then(resp => {
+          comments.push(...resp.result.items);
+        });
+      } else {
+        comments.push(...post.comments);
+      }
+    }
+    comments.forEach(comment => {
+      const date = new Date(comment.createdAt);
       if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
         const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
-        if (item.creator.id === kintone.getLoginUser().id) {
+        if (comment.creator.id === kintone.getLoginUser().id) {
           data[i].myCommentCount++;
         } else {
           data[i].othersCommentCount++;
