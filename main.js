@@ -15,6 +15,41 @@ const onHashChange = () => {
   }
 };
 
+const fetchComments = (dayCount) => {
+  // TODO: 20件以上取得する
+  return kintone.api('/k/api/people/user/post/list', 'POST', {threadId: kintone.getLoginUser().id})
+    .then(resp => {
+      const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      // data[n]: n日前
+      let data = [...Array(dayCount).keys()].map(i => {
+        const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        return {
+          date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
+          myCommentCount: 0,
+          othersCommentCount: 0,
+        }
+      });
+      let comments = resp.result.items.slice();
+      // TODO: 他n件のコメントも含める
+      resp.result.items.forEach(item => {
+        comments.push(...item.comments);
+      });
+      comments.forEach(item => {
+        const date = new Date(item.createdAt);
+        if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
+          const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
+          if (item.creator.id === kintone.getLoginUser().id) {
+            data[i].myCommentCount++;
+          } else {
+            data[i].othersCommentCount++;
+          }
+        }
+      });
+      return data;
+    });
+}
+
 const createPopup = () => {
   const popup = document.createElement('DIV');
   popup.classList.add(POPUP_CSS_CLASS);
