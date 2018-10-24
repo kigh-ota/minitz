@@ -1,1 +1,15 @@
 /* minitz CSS */
+.minitz-popup {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 320px;
+  height: 180px;
+  background-color: white;
+  border-top: 1px solid lightgray;
+  border-left: 1px solid lightgray;
+  padding: 20px;
+}
+.minitz-popup.hidden {
+  display: none;
+}
