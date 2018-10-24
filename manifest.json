@@ -1,0 +1,12 @@
+{
+  "manifest_version": 2,
+  "name": "minitz for kintone",
+  "version": "0.1",
+  "content_scripts": [
+    {
+      "matches": ["https://*.cybozu.com/k/"],
+      "js": ["main.js"],
+      "css": ["main.css"]
+    }
+  ]
+}
