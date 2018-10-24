@@ -75,8 +75,9 @@ const createPopup = () => {
   popup.textContent = 'Hello minitz!';
   
   const myChartWrapper = document.createElement('DIV');
+  let myChart;
   fetchComments(7).then(data => {
-    const myChart = new MyChart(data.reverse());
+    myChart = new MyChart(data.reverse());
     myChart.render(myChartWrapper);
   });
   
@@ -86,7 +87,7 @@ const createPopup = () => {
     const blob = await myChart.getImageAsBlob();
     console.log(blob);
     const fileKey = await uploadBlob(blob);
-    postComment(fileKey);
+    postToPeople(fileKey);
   });
   
   popup.appendChild(button);
@@ -113,17 +114,16 @@ const uploadBlob = (blob) => {
   }).catch(console.error);
 };
 
-// FIXME そのうち消す
-const postComment = (fileKey) => {
-  const SPACE = 1255;
-  const THREAD = 3707;
-  kintone.api('/k/v1/space/thread/comment', 'POST', {
-    space: SPACE,
-    thread: THREAD,
-    comment: {
-      files: [{fileKey}]
-    },
-  }, console.log, console.error);
+const postToPeople = (fileKey) => {
+  threadId = kintone.getLoginUser().id;
+  kintone.api('/k/api/people/user/post/add', 'POST',
+    {
+      threadId,
+      body: `<div><img class="cybozu-tmp-file" data-original="/k/api/blob/download.do?fileKey=${fileKey}" width="250" src="/k/api/blob/download.do?fileKey=${fileKey}&w=250" data-file="${fileKey}" data-width="250"></div>`,
+      mentions: [],
+      groupMentions:[],
+      orgMentions: [],
+    }, console.log, console.error);
 };
 
 class MyChart {
