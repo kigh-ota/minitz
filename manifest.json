@@ -12,9 +12,9 @@
         "https://*.kintone.com/k/",
         "https://*.kintone-dev.com/k/"
       ],
-      "js": ["Chart.min.js", "bootstrap.js"],
+      "js": ["bootstrap.js"],
       "css": ["main.css"]
     }
   ],
-  "web_accessible_resources": ["main.js"]
+  "web_accessible_resources": ["Chart.min.js", "main.js"]
 }
