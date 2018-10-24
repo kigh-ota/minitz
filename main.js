@@ -47,18 +47,13 @@ const uploadBlob = (blob) => {
 
   const url = kintone.api.url('/k/v1/file');
 
-  // TODO use fetch API
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', url);
-  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-        console.log(JSON.parse(xhr.responseText));
-    } else {
-        console.error(JSON.parse(xhr.responseText));
-    }
-  };
-  xhr.send(formData);
+  fetch(url, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    body: formData,
+  }).then(resp => {
+    return resp.json();
+  }).then(console.log).catch(console.error);
 };
 
 class MyChart {
