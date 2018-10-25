@@ -3,8 +3,8 @@ chrome.runtime.onMessage.addListener(function(message, callback) {
   if (message.type === 'MINITZ_DESKTOP_NTF_REQUEST') {
     chrome.notifications.create({
       type: 'basic',
-      message: 'Hello!',
-      title: 'TITLE',
+      message: message.body,
+      title: 'Minitz for kintone',
       iconUrl: 'icon.png',
     });
   }

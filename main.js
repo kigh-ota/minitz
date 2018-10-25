@@ -172,15 +172,33 @@ class Popup extends Component {
     const switchButton = document.createElement('BUTTON');
     switchButton.innerText = 'Switch View';
     switchButton.addEventListener('click', (event) => {
-      window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST' }, '*');
       this.toggleView_();
     });
     
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
 
+    this.elapsedSecondsSinceLastPost_ = null;
+
     window.setInterval(() => {
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+
+      const prev = this.elapsedSecondsSinceLastPost_;
+      const curr = Math.floor((new Date() - this.latestPostDate_) / 1000);
+      if (this.elapsedSecondsSinceLastPost_) {
+        const nextThreshold = (Math.floor(prev / 60) + 1) * 60;
+
+        const NOTIFICATION_INTERVAL_MIN = 1;
+        const NOTIFICATION_AFTER_MIN = 30;
+
+        if (curr > NOTIFICATION_AFTER_MIN * 60) {
+          if (curr >= nextThreshold) {
+            showDesktopNotification(`${nextThreshold / 60}分間何も書いていません。分報を書いてはいかが？`);
+          }
+        }
+      }
+      this.elapsedSecondsSinceLastPost_ = curr;
+
     }, 5000);
   }
 
@@ -319,106 +337,110 @@ class WeekChart extends Component {
             ticks: {
               beginAtZero: true,
             },
-            stacked: true,
-          }]
-        },
-        elements: {
-          line: {
-            tension: 0,
+              stacked: true,
+            }]
+            },
+            elements: {
+              line: {
+                tension: 0,
+              }
+              }
+            },
+            type: 'line',
+          });
+          }
+
+          getImageAsBlob() {
+            return canvasToBlob(this.el_);
           }
         }
-      },
-      type: 'line',
-    });
-  }
-  
-  getImageAsBlob() {
-    return canvasToBlob(this.el_);
-  }
-}
 
-class DayChart extends Component {
-  constructor(data) {
-    super();
+        class DayChart extends Component {
+          constructor(data) {
+            super();
 
-    this.el_ = document.createElement('CANVAS');
-    // const ctx = this.el_.getContext('2d');
-    // ctx.font = '20px Arial';
-    this.chart_ = new Chart(this.el_, {
-      type: 'doughnut',
-      data: {
-        datasets: [{
-          data: [data.nDone, data.nGoal > data.nDone ? data.nGoal - data.nDone : 0],
-          backgroundColor: ['rgba(54, 205, 69, 1)', 'rgba(0, 0, 0, .1)'],
-          hoverBackgroundColor: ['rgba(54, 205, 69, .8)', 'rgba(0, 0, 0, .1)'],
-          borderWidth: [0, 0],
-        }],
-      },
-      options: {
-        tooltips: {
-          enabled: false,
-        },
-      },
-      plugins: [{
-        afterDraw: (chart, options) => {
-          console.log(chart);
-          const width = chart.chart.width;
-          const height = chart.chart.height;
-          const ctx = chart.chart.ctx;
+            this.el_ = document.createElement('CANVAS');
+            // const ctx = this.el_.getContext('2d');
+            // ctx.font = '20px Arial';
+            this.chart_ = new Chart(this.el_, {
+              type: 'doughnut',
+              data: {
+                datasets: [{
+                  data: [data.nDone, data.nGoal > data.nDone ? data.nGoal - data.nDone : 0],
+                  backgroundColor: ['rgba(54, 205, 69, 1)', 'rgba(0, 0, 0, .1)'],
+                  hoverBackgroundColor: ['rgba(54, 205, 69, .8)', 'rgba(0, 0, 0, .1)'],
+                  borderWidth: [0, 0],
+                }],
+                },
+                options: {
+                  tooltips: {
+                    enabled: false,
+                  },
+                  },
+                  plugins: [{
+                    afterDraw: (chart, options) => {
+                      console.log(chart);
+                      const width = chart.chart.width;
+                      const height = chart.chart.height;
+                      const ctx = chart.chart.ctx;
 
-          ctx.restore();
-          const fontSize = (height / 124).toFixed(2);
-          ctx.font = fontSize + "em Arial";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = '#666';
+                      ctx.restore();
+                      const fontSize = (height / 124).toFixed(2);
+                      ctx.font = fontSize + "em Arial";
+                      ctx.textBaseline = "middle";
+                      ctx.fillStyle = '#666';
 
-          const text = data.nGoal > data.nDone ? `${Math.floor(data.nDone / data.nGoal * 100)}%`: '+100%';
-          const textX = Math.round((width - ctx.measureText(text).width) / 2);
-          const textY = height / 2 + 4;
-          ctx.fillText(text, textX, textY);
-          ctx.save();
-        },
-      }],
-    });
+                      const text = data.nGoal > data.nDone ? `${Math.floor(data.nDone / data.nGoal * 100)}%`: '+100%';
+                      const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                      const textY = height / 2 + 4;
+                      ctx.fillText(text, textX, textY);
+                      ctx.save();
+                    },
+                  }],
+                });
 
-  }
+              }
 
-  getImageAsBlob() {
-    return canvasToBlob(this.el_);
-  }
-}
+              getImageAsBlob() {
+                return canvasToBlob(this.el_);
+              }
+            }
 
-const canvasToBlob = (canvasEl) => {
-  return new Promise((resolve, reject) => {
-    if (!canvasEl) {
-      reject("No canvas element");
-    }
-    canvasEl.toBlob(blob => {
-      resolve(blob);
-    });
-  });
-}
+            const canvasToBlob = (canvasEl) => {
+              return new Promise((resolve, reject) => {
+                if (!canvasEl) {
+                  reject("No canvas element");
+                }
+                canvasEl.toBlob(blob => {
+                  resolve(blob);
+                });
+              });
+            }
 
-let isInPeople = false;
-let popup = null;
+            function showDesktopNotification(body) {
+              window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
+            }
 
-const onHashChange = () => {
-  const code = kintone.getLoginUser().code;
-  if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
-    console.log('enter my people page.');
-    popup.show();
-    isInPeople = true;
-  } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
-    console.log('leave my people page.')
-    popup.hide();
-    isInPeople = false;
-  }
-};
+            let isInPeople = false;
+            let popup = null;
 
-if ('onhashchange' in window) {
-  popup = new Popup();
-  popup.render(document.body);
-  window.addEventListener('hashchange', onHashChange);
-  onHashChange();
-}
+            const onHashChange = () => {
+              const code = kintone.getLoginUser().code;
+              if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
+                console.log('enter my people page.');
+                popup.show();
+                isInPeople = true;
+              } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
+                console.log('leave my people page.')
+                popup.hide();
+                isInPeople = false;
+              }
+            };
+
+            if ('onhashchange' in window) {
+              popup = new Popup();
+              popup.render(document.body);
+              window.addEventListener('hashchange', onHashChange);
+              onHashChange();
+            }
 
