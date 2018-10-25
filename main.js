@@ -89,6 +89,13 @@ class Component {
   render(parentEl) {
     parentEl.appendChild(this.el_);
   }
+  show() {
+    this.el_.style.display = 'none';
+  }
+
+  hide() {
+    this.el_.style.display = '';
+  }
 }
 
 class Popup extends Component {
@@ -107,24 +114,50 @@ class Popup extends Component {
     this.el_.textContent = 'Hello minitz!';
     
     const chartWrapper = document.createElement('DIV');
-    this.chart_ = null;
+    this.dayChart_ = null;
+    this.weekChart_ = null;
+    this.showDayChart_ = true;
     KintoneApi.fetchComments(7).then(data => {
-      // this.chart_ = new WeekChart(data.reverse());
-      this.chart_ = new DayChart(Math.floor(Math.random()*15), 10);
-      this.chart_.render(chartWrapper);
+      this.weekChart_ = new WeekChart(data.reverse());
+      this.dayChart_ = new DayChart(Math.floor(Math.random()*15), 10);
+      this.updateChartVisibility_();
+      this.weekChart_.render(chartWrapper);
+      this.dayChart_.render(chartWrapper);
     });
     
-    const button = document.createElement('BUTTON');
-    button.innerText = 'Post Image to People';
-    button.addEventListener('click', async (event) => {
+    const shareButton = document.createElement('BUTTON');
+    shareButton.innerText = 'Post Image to People';
+    shareButton.addEventListener('click', async (event) => {
       const blob = await this.chart_.getImageAsBlob();
       console.log(blob);
       const fileKey = await KintoneApi.uploadBlob(blob);
       KintoneApi.postToPeople(fileKey);
     });
+
+    const switchButton = document.createElement('BUTTON');
+    switchButton.innerText = 'Switch';
+    switchButton.addEventListener('click', (event) => {
+      this.toggleChart_();
+    });
     
-    this.el_.appendChild(button);
+    this.el_.appendChild(shareButton);
+    this.el_.appendChild(switchButton);
     this.el_.appendChild(chartWrapper);
+  }
+
+  toggleChart_() {
+    this.showDayChart_ = !this.showDayChart_;
+    this.updateChartVisibility_();
+  }
+
+  updateChartVisibility_() {
+    if (this.showDayChart_) {
+      this.weekChart_.hide();
+      this.dayChart_.show();
+    } else {
+      this.weekChart_.show();
+      this.dayChart_.hide();
+    }
   }
 
   show() {
