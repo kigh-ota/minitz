@@ -13,3 +13,15 @@ const next = () => {
 };
 
 next();
+
+window.addEventListener("message", function(event) {
+  // We only accept messages from ourselves
+  if (event.source != window)
+    return;
+
+  if (event.data.type && (event.data.type == 'MINITZ_DESKTOP_NTF_REQUEST')) {
+    console.log('Content script received', event.data);
+    chrome.runtime.sendMessage(event.data);
+  }
+}, false);
+

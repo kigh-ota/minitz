@@ -180,8 +180,27 @@ class Popup extends Component {
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
 
+    this.elapsedSecondsSinceLastPost_ = null;
+
     window.setInterval(() => {
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+
+      const prev = this.elapsedSecondsSinceLastPost_;
+      const curr = Math.floor((new Date() - this.latestPostDate_) / 1000);
+      if (this.elapsedSecondsSinceLastPost_) {
+        const nextThreshold = (Math.floor(prev / 60) + 1) * 60;
+
+        const NOTIFICATION_INTERVAL_MIN = 1;
+        const NOTIFICATION_AFTER_MIN = 30;
+
+        if (curr > NOTIFICATION_AFTER_MIN * 60) {
+          if (curr >= nextThreshold) {
+            showDesktopNotification(`${nextThreshold / 60}分間何も書いていません。分報を書いてはいかが？`);
+          }
+        }
+      }
+      this.elapsedSecondsSinceLastPost_ = curr;
+
     }, 5000);
   }
 
@@ -425,6 +444,10 @@ const canvasToBlob = (canvasEl) => {
       resolve(blob);
     });
   });
+}
+
+function showDesktopNotification(body) {
+  window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
 }
 
 let isInPeople = false;
