@@ -294,6 +294,7 @@ class DayView extends Component {
     this.poster_ = new TextPoster();
 
     this.minuteIndicator_ = document.createElement('DIV');
+    this.minuteIndicator_.classList.add('minitz-description');
 
     this.chart_.render(this.el_);
     this.poster_.render(this.el_);
