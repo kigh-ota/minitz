@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "minitz for kintone",
-  "version": "0.1",
+  "version": "0.2",
   "content_scripts": [
     {
       "matches": [
@@ -16,5 +16,6 @@
       "css": ["main.css"]
     }
   ],
-  "web_accessible_resources": ["Chart.min.js", "main.js"]
+  "web_accessible_resources": ["Chart.min.js", "main.js"],
+  "permissions": ["notifications"]
 }
