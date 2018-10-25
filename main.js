@@ -147,7 +147,6 @@ class Popup extends Component {
     this.el_ = document.createElement('DIV');
     this.el_.classList.add(Popup.CSS_CLASS);
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
-    this.el_.textContent = 'Hello minitz!';
     
     const viewWrapper = document.createElement('DIV');
     this.dayView_ = null;
@@ -172,9 +171,11 @@ class Popup extends Component {
     });
     
     const switchButton = document.createElement('BUTTON');
-    switchButton.innerText = 'Switch View';
+    switchButton.classList.add('minitz-switch-button');
+    switchButton.textContent = 'Show Weekly Report';
     switchButton.addEventListener('click', (event) => {
       this.toggleView_();
+      switchButton.textContent = this.showDayView_ ? 'Show Weekly Report' : 'Show Daily Report';
     });
     
     this.el_.appendChild(switchButton);

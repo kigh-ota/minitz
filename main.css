@@ -13,29 +13,37 @@
 .minitz-popup.hidden {
   display: none;
 }
+.minitz-switch-button {
+  border: none;
+  background: transparent;
+  font-size: .8em;
+  color: #426FC5;
+  float: right;
+}
+.minitz-switch-button:hover {
+  opacity: .8;
+}
 .minitz-post-text {
   width: 240px;
   margin-top: 8px;
 }
-.minitz-post-button {
+.minitz-post-button, .minitz-share-button {
   font-size: .8em;
   border-radius: 8em;
   background-color: #426FC5;
   border: none;
   color: white;
-  margin-left: 4px;
   padding: 0;
-  width: 70px;
   height: 2.4em;
 }
+.minitz-post-button:hover, .minitz-share-button:hover {
+  opacity: .8;
+}
+.minitz-post-button {
+  margin-left: 4px;
+  width: 70px;
+}
 .minitz-share-button {
-  font-size: .8em;
-  border-radius: 8em;
-  background-color: #426FC5;
-  border: none;
-  color: white;
   margin: 8px 40px;
-  padding: 0;
   width: 240px;
-  height: 2.4em;
 }
