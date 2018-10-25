@@ -71,12 +71,25 @@ class KintoneApi {
     }).catch(console.error);
   }
 
-  static postToPeople(fileKey) {
+  static postImageToPeople(fileKey) {
     const threadId = kintone.getLoginUser().id;
     kintone.api('/k/api/people/user/post/add', 'POST',
       {
         threadId,
         body: `<div><img class="cybozu-tmp-file" data-original="/k/api/blob/download.do?fileKey=${fileKey}" width="250" src="/k/api/blob/download.do?fileKey=${fileKey}&w=250" data-file="${fileKey}" data-width="250"></div>`,
+        mentions: [],
+        groupMentions:[],
+        orgMentions: [],
+      }, console.log, console.error
+    );
+  }
+
+  static postTextToPeople(text) {
+    const threadId = kintone.getLoginUser().id;
+    kintone.api('/k/api/people/user/post/add', 'POST',
+      {
+        threadId,
+        body: `<div>${text}</div>`,
         mentions: [],
         groupMentions:[],
         orgMentions: [],
@@ -174,7 +187,7 @@ class ImageShareButton extends Component {
     this.el_.addEventListener('click', async (event) => {
       const blob = await chart.getImageAsBlob();
       const fileKey = await KintoneApi.uploadBlob(blob);
-      KintoneApi.postToPeople(fileKey);
+      KintoneApi.postImageToPeople(fileKey);
     });
   }
 }
@@ -193,6 +206,32 @@ class WeekView extends Component {
   }
 }
 
+class TextPoster extends Component {
+  constructor() {
+    super();
+    this.el_ = document.createElement('DIV');
+
+    this.input_ = document.createElement('INPUT');
+    this.input_.type = 'text';
+    this.input_.style.width = '250px';
+
+    this.button_ = document.createElement('BUTTON');
+    this.button_.innerText = 'POST';
+    this.button_.addEventListener('click', (event) => {
+      const value = this.input_.value.trim();
+      if (value.match(/^\s*$/)) {
+        return; // ignore when empty
+      }
+      const p = KintoneApi.postTextToPeople(value);
+      this.input_.value = '';
+      return p;
+    });
+
+    this.el_.appendChild(this.input_);
+    this.el_.appendChild(this.button_);
+  }
+}
+
 class DayView extends Component {
   constructor(chartData) {
     super();
@@ -200,7 +239,10 @@ class DayView extends Component {
     this.el_.classList.add('day-view');
 
     this.chart_ = new DayChart(chartData);
+    this.poster_ = new TextPoster();
+
     this.chart_.render(this.el_);
+    this.poster_.render(this.el_);
   }
 }
 
