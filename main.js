@@ -113,16 +113,22 @@ class Popup extends Component {
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
     this.el_.textContent = 'Hello minitz!';
     
-    const chartWrapper = document.createElement('DIV');
+    const viewWrapper = document.createElement('DIV');
+    this.dayView_ = null;
+    this.weekView_ = null;
     this.dayChart_ = null;
     this.weekChart_ = null;
-    this.showDayChart_ = true;
+    this.showDayView_ = true;
     KintoneApi.fetchComments(7).then(data => {
+      this.dayView_ = new DayView();
+      this.weekView_ = new WeekView();
       this.weekChart_ = new WeekChart(data.reverse());
       this.dayChart_ = new DayChart(Math.floor(Math.random()*15), 10);
-      this.updateChartVisibility_();
-      this.weekChart_.render(chartWrapper);
-      this.dayChart_.render(chartWrapper);
+      this.updateViewVisibility_();
+      // this.weekChart_.render(viewWrapper);
+      // this.dayChart_.render(viewWrapper);
+      this.weekView_.render(viewWrapper);
+      this.dayView_.render(viewWrapper);
     });
     
     const shareButton = document.createElement('BUTTON');
@@ -137,26 +143,26 @@ class Popup extends Component {
     const switchButton = document.createElement('BUTTON');
     switchButton.innerText = 'Switch';
     switchButton.addEventListener('click', (event) => {
-      this.toggleChart_();
+      this.toggleView_();
     });
     
     this.el_.appendChild(shareButton);
     this.el_.appendChild(switchButton);
-    this.el_.appendChild(chartWrapper);
+    this.el_.appendChild(viewWrapper);
   }
 
-  toggleChart_() {
-    this.showDayChart_ = !this.showDayChart_;
-    this.updateChartVisibility_();
+  toggleView_() {
+    this.showDayView_ = !this.showDayView_;
+    this.updateViewVisibility_();
   }
 
-  updateChartVisibility_() {
-    if (this.showDayChart_) {
-      this.weekChart_.hide();
-      this.dayChart_.show();
+  updateViewVisibility_() {
+    if (this.showDayView_) {
+      this.weekView_.hide();
+      this.dayView_.show();
     } else {
-      this.weekChart_.show();
-      this.dayChart_.hide();
+      this.weekView_.show();
+      this.dayView_.hide();
     }
   }
 
@@ -166,6 +172,22 @@ class Popup extends Component {
 
   hide() {
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
+  }
+}
+
+class WeekView extends Component {
+  constructor() {
+    super();
+    this.el_ = document.createElement('DIV');
+    this.el_.innerText = 'Week';
+  }
+}
+
+class DayView extends Component {
+  constructor() {
+    super();
+    this.el_ = document.createElement('DIV');
+    this.el_.innerText = 'Day';
   }
 }
 
