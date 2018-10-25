@@ -4,7 +4,7 @@
   bottom: 0;
   right: 0;
   width: 320px;
-  height: 220px;
+  height: 240px;
   background-color: white;
   border-top: 1px solid lightgray;
   border-left: 1px solid lightgray;
@@ -12,4 +12,30 @@
 }
 .minitz-popup.hidden {
   display: none;
+}
+.minitz-post-text {
+  width: 240px;
+  margin-top: 8px;
+}
+.minitz-post-button {
+  font-size: .8em;
+  border-radius: 8em;
+  background-color: #426FC5;
+  border: none;
+  color: white;
+  margin-left: 4px;
+  padding: 0;
+  width: 70px;
+  height: 2.4em;
+}
+.minitz-share-button {
+  font-size: .8em;
+  border-radius: 8em;
+  background-color: #426FC5;
+  border: none;
+  color: white;
+  margin: 8px 40px;
+  padding: 0;
+  width: 240px;
+  height: 2.4em;
 }

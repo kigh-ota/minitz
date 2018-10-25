@@ -232,6 +232,7 @@ class ImageShareButton extends Component {
   constructor(chart) {
     super();
     this.el_ = document.createElement('BUTTON');
+    this.el_.classList.add('minitz-share-button');
     this.el_.innerText = 'Post Image to People';
     this.el_.addEventListener('click', async (event) => {
       const blob = await chart.getImageAsBlob();
@@ -262,9 +263,10 @@ class TextPoster extends Component {
 
     this.input_ = document.createElement('INPUT');
     this.input_.type = 'text';
-    this.input_.style.width = '250px';
+    this.input_.classList.add('minitz-post-text');
 
     this.button_ = document.createElement('BUTTON');
+    this.button_.classList.add('minitz-post-button');
     this.button_.innerText = 'POST';
     this.button_.addEventListener('click', (event) => {
       const value = this.input_.value.trim();
