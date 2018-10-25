@@ -116,17 +116,16 @@ class Popup extends Component {
     const viewWrapper = document.createElement('DIV');
     this.dayView_ = null;
     this.weekView_ = null;
-    this.dayChart_ = null;
-    this.weekChart_ = null;
+    // this.dayChart_ = null;
+    // this.weekChart_ = null;
     this.showDayView_ = true;
     KintoneApi.fetchComments(7).then(data => {
-      this.dayView_ = new DayView();
-      this.weekView_ = new WeekView();
-      this.weekChart_ = new WeekChart(data.reverse());
-      this.dayChart_ = new DayChart(Math.floor(Math.random()*15), 10);
+      this.dayView_ = new DayView({
+        nDone: Math.floor(Math.random()*15),
+        nGoal: 10
+      });
+      this.weekView_ = new WeekView(data.reverse());
       this.updateViewVisibility_();
-      // this.weekChart_.render(viewWrapper);
-      // this.dayChart_.render(viewWrapper);
       this.weekView_.render(viewWrapper);
       this.dayView_.render(viewWrapper);
     });
@@ -176,18 +175,22 @@ class Popup extends Component {
 }
 
 class WeekView extends Component {
-  constructor() {
+  constructor(chartData) {
     super();
     this.el_ = document.createElement('DIV');
-    this.el_.innerText = 'Week';
+
+    this.Chart_ = new WeekChart(chartData);
+    this.Chart_.render(this.el_);
   }
 }
 
 class DayView extends Component {
-  constructor() {
+  constructor(chartData) {
     super();
     this.el_ = document.createElement('DIV');
-    this.el_.innerText = 'Day';
+
+    this.chart_ = new DayChart(chartData);
+    this.chart_.render(this.el_);
   }
 }
 
@@ -240,7 +243,7 @@ class WeekChart extends Component {
 }
 
 class DayChart extends Component {
-  constructor(nDone, nGoal) {
+  constructor(data) {
     super();
 
     this.el_ = document.createElement('CANVAS');
@@ -250,12 +253,12 @@ class DayChart extends Component {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [nDone],
+          data: [data.nDone],
           backgroundColor: ['rgba(255, 99, 132, 0.8)'],
         }],
       },
       options: {
-        circumference: 2.0 * Math.PI * nDone / nGoal,
+        circumference: 2.0 * Math.PI * data.nDone / data.nGoal,
       },
       plugins: [{
         afterDraw: (chart, options) => {
@@ -270,7 +273,7 @@ class DayChart extends Component {
           ctx.textBaseline = "middle";
           ctx.fillStyle = '#000';
 
-          const text = `${nDone} / ${nGoal}`;
+          const text = `${data.nDone} / ${data.nGoal}`;
           const textX = Math.round((width - ctx.measureText(text).width) / 2);
           const textY = height / 2;
           ctx.fillText(text, textX, textY);
