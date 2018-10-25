@@ -87,6 +87,12 @@ class Component {
 function commentsToData(comments, dayCount) {
   const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+  const commentsWithDt = comments.map(comment => {
+    comment.dt = new Date(comment.createdAt);
+    return comment;
+  });
+
   // daySeries[n]: n日前
   let daySeries = [...Array(dayCount).keys()].map(i => {
     const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
@@ -98,10 +104,9 @@ function commentsToData(comments, dayCount) {
       likedCount: 0,
     }
   });
-  comments.forEach(comment => {
-    const date = new Date(comment.createdAt);
-    if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
-      const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
+  commentsWithDt.forEach(comment => {
+    if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= comment.dt) {
+      const i = Math.floor((tomorrow - comment.dt) / 1000 / 60 / 60 / 24);
       if (comment.creator.id === kintone.getLoginUser().id) {
         daySeries[i].commentCount++;
         daySeries[i].likedCount += comment.likeCount;
@@ -113,7 +118,10 @@ function commentsToData(comments, dayCount) {
       }
     }
   });
-  return {daySeries};
+
+  const latestDt = commentsWithDt.map(c => c.dt).sort((a,b) => a < b ? 1 : -1)[0];
+
+  return {daySeries, latestDt};
 }
 
 class Popup extends Component {
@@ -135,14 +143,19 @@ class Popup extends Component {
     this.dayView_ = null;
     this.weekView_ = null;
     this.showDayView_ = true;
+    this.latestPostDate_ = null;
     KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
       const data = commentsToData(comments, 7);
       const daySeries = data.daySeries;
+
       this.dayView_ = new DayView({
         nDone: daySeries[0].commentCount,
         // nDone: Math.floor(Math.random()*15), // dummy data
         nGoal: 10
       });
+      this.latestPostDate_ = data.latestDt;
+      this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+
       this.weekView_ = new WeekView(daySeries.reverse());
       this.dayView_.hide();
       this.weekView_.hide();
@@ -160,6 +173,13 @@ class Popup extends Component {
     
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
+
+    window.setInterval(() => {
+      if (!this.latestPostDate_) {
+        return;
+      }
+      this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+    }, 5000);
   }
 
   toggleView_() {
@@ -168,7 +188,6 @@ class Popup extends Component {
   }
 
   updateViewVisibility_() {
-    console.log(this.showDayView_);
     if (this.showDayView_) {
       this.dayView_.show();
       this.weekView_.hide();
@@ -249,8 +268,18 @@ class DayView extends Component {
     this.chart_ = new DayChart(chartData);
     this.poster_ = new TextPoster();
 
+    this.minuteIndicator_ = document.createElement('DIV');
+
     this.chart_.render(this.el_);
     this.poster_.render(this.el_);
+    this.el_.appendChild(this.minuteIndicator_);
+  }
+
+  updateMinuteIndicator(latestPostDate) {
+    const min = Math.floor((new Date() - latestPostDate) / 1000 / 60);
+    if (min) {
+      this.minuteIndicator_.innerText = `${min} minutes since last people post.`
+    }
   }
 }
 
