@@ -90,11 +90,11 @@ class Component {
     parentEl.appendChild(this.el_);
   }
   show() {
-    this.el_.style.display = 'none';
+    this.el_.style.display = '';
   }
 
   hide() {
-    this.el_.style.display = '';
+    this.el_.style.display = 'none';
   }
 }
 
@@ -116,8 +116,6 @@ class Popup extends Component {
     const viewWrapper = document.createElement('DIV');
     this.dayView_ = null;
     this.weekView_ = null;
-    // this.dayChart_ = null;
-    // this.weekChart_ = null;
     this.showDayView_ = true;
     KintoneApi.fetchComments(7).then(data => {
       this.dayView_ = new DayView({
@@ -125,27 +123,20 @@ class Popup extends Component {
         nGoal: 10
       });
       this.weekView_ = new WeekView(data.reverse());
-      this.updateViewVisibility_();
-      this.weekView_.render(viewWrapper);
+      this.dayView_.hide();
+      this.weekView_.hide();
       this.dayView_.render(viewWrapper);
+      this.weekView_.render(viewWrapper);
+
+      this.updateViewVisibility_();
     });
     
-    const shareButton = document.createElement('BUTTON');
-    shareButton.innerText = 'Post Image to People';
-    shareButton.addEventListener('click', async (event) => {
-      const blob = await this.chart_.getImageAsBlob();
-      console.log(blob);
-      const fileKey = await KintoneApi.uploadBlob(blob);
-      KintoneApi.postToPeople(fileKey);
-    });
-
     const switchButton = document.createElement('BUTTON');
-    switchButton.innerText = 'Switch';
+    switchButton.innerText = 'Switch View';
     switchButton.addEventListener('click', (event) => {
       this.toggleView_();
     });
     
-    this.el_.appendChild(shareButton);
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
   }
@@ -156,9 +147,10 @@ class Popup extends Component {
   }
 
   updateViewVisibility_() {
+    console.log(this.showDayView_);
     if (this.showDayView_) {
-      this.weekView_.hide();
       this.dayView_.show();
+      this.weekView_.hide();
     } else {
       this.weekView_.show();
       this.dayView_.hide();
@@ -174,13 +166,30 @@ class Popup extends Component {
   }
 }
 
+class ImageShareButton extends Component {
+  constructor(chart) {
+    super();
+    this.el_ = document.createElement('BUTTON');
+    this.el_.innerText = 'Post Image to People';
+    this.el_.addEventListener('click', async (event) => {
+      const blob = await chart.getImageAsBlob();
+      const fileKey = await KintoneApi.uploadBlob(blob);
+      KintoneApi.postToPeople(fileKey);
+    });
+  }
+}
+
 class WeekView extends Component {
   constructor(chartData) {
     super();
     this.el_ = document.createElement('DIV');
+    this.el_.classList.add('week-view');
 
-    this.Chart_ = new WeekChart(chartData);
-    this.Chart_.render(this.el_);
+    this.chart_ = new WeekChart(chartData);
+    this.imageShareButton_ = new ImageShareButton(this.chart_);
+
+    this.chart_.render(this.el_);
+    this.imageShareButton_.render(this.el_);
   }
 }
 
@@ -188,6 +197,7 @@ class DayView extends Component {
   constructor(chartData) {
     super();
     this.el_ = document.createElement('DIV');
+    this.el_.classList.add('day-view');
 
     this.chart_ = new DayChart(chartData);
     this.chart_.render(this.el_);
