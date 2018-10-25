@@ -172,6 +172,7 @@ class Popup extends Component {
     const switchButton = document.createElement('BUTTON');
     switchButton.innerText = 'Switch View';
     switchButton.addEventListener('click', (event) => {
+      window.postMessage({ type: "FROM_PAGE", text: "Hello from the webpage!" }, "*");
       this.toggleView_();
     });
     
