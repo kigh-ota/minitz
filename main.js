@@ -128,6 +128,12 @@ function commentsToData(comments, dayCount) {
   return {daySeries, latestDt};
 }
 
+const COMMENT_COUNT_GOAL = 12;
+const UNACHIEVED_COLOR = 'rgba(249, 166, 2, 1)';
+const HOVER_UNACHIEVED_COLOR = 'rgba(249, 166, 2, .8)';
+const ACHIEVED_COLOR = 'rgba(54, 205, 69, 1)';
+const HOVER_ACHIEVED_COLOR = 'rgba(54, 205, 69, .8)';
+
 class Popup extends Component {
   static get CSS_CLASS() {
     return 'minitz-popup';
@@ -152,11 +158,7 @@ class Popup extends Component {
       const data = commentsToData(comments, 7);
       const daySeries = data.daySeries;
 
-      this.dayView_ = new DayView({
-        nDone: daySeries[0].commentCount,
-        // nDone: Math.floor(Math.random()*15), // dummy data
-        nGoal: 12
-      });
+      this.dayView_ = new DayView(daySeries[0].commentCount);
       this.latestPostDate_ = data.latestDt;
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
 
@@ -318,129 +320,156 @@ class WeekChart extends Component {
           {
             label: 'comment',
             data: data.map(item => item.commentCount),
-            backgroundColor: ['rgba(255, 99, 132, 0.2)'],
-            borderColor: ['rgba(255,99,132,1)'],
-            borderWidth: 1
+            backgroundColor: data.map(item => {
+              return item.commentCount < COMMENT_COUNT_GOAL ? UNACHIEVED_COLOR: ACHIEVED_COLOR
+            }),
+            hoverBackgroundColor: data.map(item => {
+              return item.commentCount < COMMENT_COUNT_GOAL ? HOVER_UNACHIEVED_COLOR: HOVER_ACHIEVED_COLOR
+            }),
+            borderWidth: 0,
           },
           {
-            label: 'commented',
-            data: data.map(item => item.commentedCount),
-            //backgroundColor: ['rgba(255, 99, 132, 0.2)'],
-            //borderColor: ['rgba(255,99,132,1)'],
-            borderWidth: 1
-          },
+            data: data.map(_ => COMMENT_COUNT_GOAL),
+            type: 'line',
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+          }
         ]
       },
       options: {
+        legend: {
+          display: false,
+        },
+        tooltips: {
+          enabled: false,
+        },
         scales: {
+          xAxes: [{
+            gridLines: {
+              display: false,
+            },
+          }],
           yAxes: [{
             ticks: {
               beginAtZero: true,
+              suggestedMax: 15,
             },
-              stacked: true,
-            }]
+            gridLines: {
+              display: false,
             },
-            elements: {
-              line: {
-                tension: 0,
-              }
-              }
-            },
-            type: 'line',
-          });
-          }
-
-          getImageAsBlob() {
-            return canvasToBlob(this.el_);
+          }]
+        },
+        elements: {
+          line: {
+            tension: 0,
           }
         }
+      },
+      type: 'bar',
+    });
+  }
+  
+  getImageAsBlob() {
+    return canvasToBlob(this.el_);
+  }
+}
 
-        class DayChart extends Component {
-          constructor(data) {
-            super();
+class DayChart extends Component {
+  constructor(data) {
+    super();
 
-            this.el_ = document.createElement('CANVAS');
-            // const ctx = this.el_.getContext('2d');
-            // ctx.font = '20px Arial';
-            this.chart_ = new Chart(this.el_, {
-              type: 'doughnut',
-              data: {
-                datasets: [{
-                  data: [data.nDone, data.nGoal > data.nDone ? data.nGoal - data.nDone : 0],
-                  backgroundColor: ['rgba(54, 205, 69, 1)', 'rgba(0, 0, 0, .1)'],
-                  hoverBackgroundColor: ['rgba(54, 205, 69, .8)', 'rgba(0, 0, 0, .1)'],
-                  borderWidth: [0, 0],
-                }],
-                },
-                options: {
-                  tooltips: {
-                    enabled: false,
-                  },
-                  },
-                  plugins: [{
-                    afterDraw: (chart, options) => {
-                      console.log(chart);
-                      const width = chart.chart.width;
-                      const height = chart.chart.height;
-                      const ctx = chart.chart.ctx;
+    this.el_ = document.createElement('CANVAS');
+    // const ctx = this.el_.getContext('2d');
+    // ctx.font = '20px Arial';
+    this.chart_ = new Chart(this.el_, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [
+            data,
+            COMMENT_COUNT_GOAL > data ? COMMENT_COUNT_GOAL - data : 0
+          ],
+          backgroundColor: [
+            data < COMMENT_COUNT_GOAL ? UNACHIEVED_COLOR: ACHIEVED_COLOR,
+            'rgba(0, 0, 0, .1)'
+          ],
+          hoverBackgroundColor: [
+            data < COMMENT_COUNT_GOAL ? HOVER_UNACHIEVED_COLOR: HOVER_ACHIEVED_COLOR,
+            'rgba(0, 0, 0, .1)'
+          ],
+          borderWidth: [0, 0],
+        }],
+      },
+      options: {
+        tooltips: {
+          enabled: false,
+        },
+      },
+      plugins: [{
+        afterDraw: (chart, options) => {
+          console.log(chart);
+          const width = chart.chart.width;
+          const height = chart.chart.height;
+          const ctx = chart.chart.ctx;
 
-                      ctx.restore();
-                      const fontSize = (height / 124).toFixed(2);
-                      ctx.font = fontSize + "em Arial";
-                      ctx.textBaseline = "middle";
-                      ctx.fillStyle = '#666';
+          ctx.restore();
+          const fontSize = (height / 124).toFixed(2);
+          ctx.font = fontSize + "em Arial";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = '#666';
 
-                      const text = data.nGoal > data.nDone ? `${Math.floor(data.nDone / data.nGoal * 100)}%`: '+100%';
-                      const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                      const textY = height / 2 + 4;
-                      ctx.fillText(text, textX, textY);
-                      ctx.save();
-                    },
-                  }],
-                });
+          const text = COMMENT_COUNT_GOAL > data ? `${Math.floor(data / COMMENT_COUNT_GOAL * 100)}%`: '+100%';
+          const textX = Math.round((width - ctx.measureText(text).width) / 2);
+          const textY = height / 2 + 4;
+          ctx.fillText(text, textX, textY);
+          ctx.save();
+        },
+      }],
+    });
 
-              }
+  }
 
-              getImageAsBlob() {
-                return canvasToBlob(this.el_);
-              }
-            }
+  getImageAsBlob() {
+    return canvasToBlob(this.el_);
+  }
+}
 
-            const canvasToBlob = (canvasEl) => {
-              return new Promise((resolve, reject) => {
-                if (!canvasEl) {
-                  reject("No canvas element");
-                }
-                canvasEl.toBlob(blob => {
-                  resolve(blob);
-                });
-              });
-            }
+const canvasToBlob = (canvasEl) => {
+  return new Promise((resolve, reject) => {
+    if (!canvasEl) {
+      reject("No canvas element");
+    }
+    canvasEl.toBlob(blob => {
+      resolve(blob);
+    });
+  });
+}
 
-            function showDesktopNotification(body) {
-              window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
-            }
+function showDesktopNotification(body) {
+  window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
+}
 
-            let isInPeople = false;
-            let popup = null;
+let isInPeople = false;
+let popup = null;
 
-            const onHashChange = () => {
-              const code = kintone.getLoginUser().code;
-              if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
-                console.log('enter my people page.');
-                popup.show();
-                isInPeople = true;
-              } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
-                console.log('leave my people page.')
-                popup.hide();
-                isInPeople = false;
-              }
-            };
+const onHashChange = () => {
+  const code = kintone.getLoginUser().code;
+  if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
+    console.log('enter my people page.');
+    popup.show();
+    isInPeople = true;
+  } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
+    console.log('leave my people page.')
+    popup.hide();
+    isInPeople = false;
+  }
+};
 
-            if ('onhashchange' in window) {
-              popup = new Popup();
-              popup.render(document.body);
-              window.addEventListener('hashchange', onHashChange);
-              onHashChange();
-            }
+if ('onhashchange' in window) {
+  popup = new Popup();
+  popup.render(document.body);
+  window.addEventListener('hashchange', onHashChange);
+  onHashChange();
+}
 
