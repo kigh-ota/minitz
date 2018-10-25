@@ -299,26 +299,33 @@ class WeekChart extends Component {
           {
             label: 'comment',
             data: data.map(item => item.commentCount),
-            backgroundColor: ['rgba(255, 99, 132, 0.2)'],
-            borderColor: ['rgba(255,99,132,1)'],
-            borderWidth: 1
-          },
-          {
-            label: 'commented',
-            data: data.map(item => item.commentedCount),
-            //backgroundColor: ['rgba(255, 99, 132, 0.2)'],
-            //borderColor: ['rgba(255,99,132,1)'],
-            borderWidth: 1
+            backgroundColor: 'rgba(54, 205, 69, 1)',
+            hoverBackgroundColor: 'rgba(54, 205, 69, .8)',
+            borderWidth: 0,
           },
         ]
       },
       options: {
+        legend: {
+          display: false,
+        },
+        tooltips: {
+          enabled: false,
+        },
         scales: {
+          xAxes: [{
+            gridLines: {
+              display: false,
+            },
+          }],
           yAxes: [{
             ticks: {
               beginAtZero: true,
+              suggestedMax: 15,
             },
-            stacked: true,
+            gridLines: {
+              display: false,
+            },
           }]
         },
         elements: {
@@ -327,7 +334,7 @@ class WeekChart extends Component {
           }
         }
       },
-      type: 'line',
+      type: 'bar',
     });
   }
   
