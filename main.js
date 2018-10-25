@@ -128,6 +128,12 @@ function commentsToData(comments, dayCount) {
   return {daySeries, latestDt};
 }
 
+const COMMENT_COUNT_GOAL = 12;
+const UNACHIEVED_COLOR = 'rgba(249, 166, 2, 1)';
+const HOVER_UNACHIEVED_COLOR = 'rgba(249, 166, 2, .8)';
+const ACHIEVED_COLOR = 'rgba(54, 205, 69, 1)';
+const HOVER_ACHIEVED_COLOR = 'rgba(54, 205, 69, .8)';
+
 class Popup extends Component {
   static get CSS_CLASS() {
     return 'minitz-popup';
@@ -152,11 +158,7 @@ class Popup extends Component {
       const data = commentsToData(comments, 7);
       const daySeries = data.daySeries;
 
-      this.dayView_ = new DayView({
-        nDone: daySeries[0].commentCount,
-        // nDone: Math.floor(Math.random()*15), // dummy data
-        nGoal: 12
-      });
+      this.dayView_ = new DayView(daySeries[0].commentCount);
       this.latestPostDate_ = data.latestDt;
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
 
@@ -299,10 +301,21 @@ class WeekChart extends Component {
           {
             label: 'comment',
             data: data.map(item => item.commentCount),
-            backgroundColor: 'rgba(54, 205, 69, 1)',
-            hoverBackgroundColor: 'rgba(54, 205, 69, .8)',
+            backgroundColor: data.map(item => {
+              return item.commentCount < COMMENT_COUNT_GOAL ? UNACHIEVED_COLOR: ACHIEVED_COLOR
+            }),
+            hoverBackgroundColor: data.map(item => {
+              return item.commentCount < COMMENT_COUNT_GOAL ? HOVER_UNACHIEVED_COLOR: HOVER_ACHIEVED_COLOR
+            }),
             borderWidth: 0,
           },
+          {
+            data: data.map(_ => COMMENT_COUNT_GOAL),
+            type: 'line',
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+          }
         ]
       },
       options: {
@@ -354,9 +367,18 @@ class DayChart extends Component {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [data.nDone, data.nGoal > data.nDone ? data.nGoal - data.nDone : 0],
-          backgroundColor: ['rgba(54, 205, 69, 1)', 'rgba(0, 0, 0, .1)'],
-          hoverBackgroundColor: ['rgba(54, 205, 69, .8)', 'rgba(0, 0, 0, .1)'],
+          data: [
+            data,
+            COMMENT_COUNT_GOAL > data ? COMMENT_COUNT_GOAL - data : 0
+          ],
+          backgroundColor: [
+            data < COMMENT_COUNT_GOAL ? UNACHIEVED_COLOR: ACHIEVED_COLOR,
+            'rgba(0, 0, 0, .1)'
+          ],
+          hoverBackgroundColor: [
+            data < COMMENT_COUNT_GOAL ? HOVER_UNACHIEVED_COLOR: HOVER_ACHIEVED_COLOR,
+            'rgba(0, 0, 0, .1)'
+          ],
           borderWidth: [0, 0],
         }],
       },
@@ -378,7 +400,7 @@ class DayChart extends Component {
           ctx.textBaseline = "middle";
           ctx.fillStyle = '#666';
 
-          const text = data.nGoal > data.nDone ? `${Math.floor(data.nDone / data.nGoal * 100)}%`: '+100%';
+          const text = COMMENT_COUNT_GOAL > data ? `${Math.floor(data / COMMENT_COUNT_GOAL * 100)}%`: '+100%';
           const textX = Math.round((width - ctx.measureText(text).width) / 2);
           const textY = height / 2 + 4;
           ctx.fillText(text, textX, textY);
