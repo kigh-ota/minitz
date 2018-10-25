@@ -155,7 +155,7 @@ class Popup extends Component {
       this.dayView_ = new DayView({
         nDone: daySeries[0].commentCount,
         // nDone: Math.floor(Math.random()*15), // dummy data
-        nGoal: 10
+        nGoal: 12
       });
       this.latestPostDate_ = data.latestDt;
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
@@ -347,12 +347,16 @@ class DayChart extends Component {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [data.nDone],
-          backgroundColor: ['rgba(255, 99, 132, 0.8)'],
+          data: [data.nDone, data.nGoal > data.nDone ? data.nGoal - data.nDone : 0],
+          backgroundColor: ['rgba(54, 205, 69, 1)', 'rgba(0, 0, 0, .1)'],
+          hoverBackgroundColor: ['rgba(54, 205, 69, .8)', 'rgba(0, 0, 0, .1)'],
+          borderWidth: [0, 0],
         }],
       },
       options: {
-        circumference: 2.0 * Math.PI * data.nDone / data.nGoal,
+        tooltips: {
+          enabled: false,
+        },
       },
       plugins: [{
         afterDraw: (chart, options) => {
@@ -362,14 +366,14 @@ class DayChart extends Component {
           const ctx = chart.chart.ctx;
 
           ctx.restore();
-          const fontSize = (height / 114).toFixed(2);
+          const fontSize = (height / 124).toFixed(2);
           ctx.font = fontSize + "em Arial";
           ctx.textBaseline = "middle";
-          ctx.fillStyle = '#000';
+          ctx.fillStyle = '#666';
 
-          const text = `${data.nDone} / ${data.nGoal}`;
+          const text = data.nGoal > data.nDone ? `${Math.floor(data.nDone / data.nGoal * 100)}%`: '+100%';
           const textX = Math.round((width - ctx.measureText(text).width) / 2);
-          const textY = height / 2;
+          const textY = height / 2 + 4;
           ctx.fillText(text, textX, textY);
           ctx.save();
         },
