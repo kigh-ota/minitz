@@ -132,7 +132,8 @@ class Popup extends Component {
     this.showDayView_ = true;
     KintoneApi.fetchComments(7).then(data => {
       this.dayView_ = new DayView({
-        nDone: Math.floor(Math.random()*15),
+        nDone: data[0].commentCount,
+        // nDone: Math.floor(Math.random()*15), // dummy data
         nGoal: 10
       });
       this.weekView_ = new WeekView(data.reverse());
