@@ -109,7 +109,7 @@ class Popup extends Component {
     const chartWrapper = document.createElement('DIV');
     this.chart_ = null;
     KintoneApi.fetchComments(7).then(data => {
-      this.chart_ = new MyChart(data.reverse());
+      this.chart_ = new WeekChart(data.reverse());
       this.chart_.render(chartWrapper);
     });
     
@@ -135,7 +135,7 @@ class Popup extends Component {
   }
 }
 
-class MyChart extends Component {
+class WeekChart extends Component {
   constructor(data) {
     super();
     this.el_ = document.createElement('CANVAS');
