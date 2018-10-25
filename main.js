@@ -277,7 +277,7 @@ class DayView extends Component {
 
   updateMinuteIndicator(latestPostDate) {
     const min = Math.floor((new Date() - latestPostDate) / 1000 / 60);
-    if (min) {
+    if (min || min === 0) {
       this.minuteIndicator_.innerText = `${min} minutes since last people post.`
     }
   }
