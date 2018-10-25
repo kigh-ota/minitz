@@ -1,22 +1,10 @@
 class KintoneApi {
-  static fetchComments(dayCount) {
+  static fetchRecentPostsAndComments(dayCount) {
     return kintone.api('/k/api/people/user/post/list', 'POST', {
       threadId: kintone.getLoginUser().id,
       size: 100,
     }).then(async resp => {
       const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-      const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      // data[n]: n日前
-      let data = [...Array(dayCount).keys()].map(i => {
-        const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
-        return {
-          date: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
-          commentCount: 0,
-          commentedCount: 0,
-          likeCount: 0,
-          likedCount: 0,
-        }
-      });
       const posts = resp.result.items.filter(item => {
         return new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= new Date(item.commentedAt);
       });
@@ -33,22 +21,7 @@ class KintoneApi {
           comments.push(...post.comments);
         }
       }
-      comments.forEach(comment => {
-        const date = new Date(comment.createdAt);
-        if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
-          const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
-          if (comment.creator.id === kintone.getLoginUser().id) {
-            data[i].commentCount++;
-            data[i].likedCount += comment.likeCount;
-          } else {
-            data[i].commentedCount++;
-          }
-          if (comment.liked) {
-            data[i].likeCount++;
-          }
-        }
-      });
-      return data;
+      return comments;
     });
   }
 
@@ -111,6 +84,38 @@ class Component {
   }
 }
 
+function commentsToData(comments, dayCount) {
+  const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  // daySeries[n]: n日前
+  let daySeries = [...Array(dayCount).keys()].map(i => {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    return {
+      date: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
+      commentCount: 0,
+      commentedCount: 0,
+      likeCount: 0,
+      likedCount: 0,
+    }
+  });
+  comments.forEach(comment => {
+    const date = new Date(comment.createdAt);
+    if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= date) {
+      const i = Math.floor((tomorrow - date) / 1000 / 60 / 60 / 24);
+      if (comment.creator.id === kintone.getLoginUser().id) {
+        daySeries[i].commentCount++;
+        daySeries[i].likedCount += comment.likeCount;
+      } else {
+        daySeries[i].commentedCount++;
+      }
+      if (comment.liked) {
+        daySeries[i].likeCount++;
+      }
+    }
+  });
+  return {daySeries};
+}
+
 class Popup extends Component {
   static get CSS_CLASS() {
     return 'minitz-popup';
@@ -130,13 +135,15 @@ class Popup extends Component {
     this.dayView_ = null;
     this.weekView_ = null;
     this.showDayView_ = true;
-    KintoneApi.fetchComments(7).then(data => {
+    KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
+      const data = commentsToData(comments, 7);
+      const daySeries = data.daySeries;
       this.dayView_ = new DayView({
-        nDone: data[0].commentCount,
+        nDone: daySeries[0].commentCount,
         // nDone: Math.floor(Math.random()*15), // dummy data
         nGoal: 10
       });
-      this.weekView_ = new WeekView(data.reverse());
+      this.weekView_ = new WeekView(daySeries.reverse());
       this.dayView_.hide();
       this.weekView_.hide();
       this.dayView_.render(viewWrapper);
