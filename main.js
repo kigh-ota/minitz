@@ -109,7 +109,8 @@ class Popup extends Component {
     const chartWrapper = document.createElement('DIV');
     this.chart_ = null;
     KintoneApi.fetchComments(7).then(data => {
-      this.chart_ = new WeekChart(data.reverse());
+      // this.chart_ = new WeekChart(data.reverse());
+      this.chart_ = new DayChart(Math.floor(Math.random()*15), 10);
       this.chart_.render(chartWrapper);
     });
     
@@ -140,7 +141,6 @@ class WeekChart extends Component {
     super();
     this.el_ = document.createElement('CANVAS');
     this.chart_ = new Chart(this.el_, {
-      type: 'bar',
       data: {
         labels: data.map(item => item.date.substr(5)),
         datasets: [
@@ -180,15 +180,66 @@ class WeekChart extends Component {
   }
   
   getImageAsBlob() {
-    return new Promise((resolve, reject) => {
-      if (!this.el_) {
-        reject("No canvas element");
-      }
-      this.el_.toBlob(blob => {
-        resolve(blob);
-      });
-    });
+    return canvasToBlob(this.el_);
   }
+}
+
+class DayChart extends Component {
+  constructor(nDone, nGoal) {
+    super();
+
+    this.el_ = document.createElement('CANVAS');
+    // const ctx = this.el_.getContext('2d');
+    // ctx.font = '20px Arial';
+    this.chart_ = new Chart(this.el_, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [nDone],
+          backgroundColor: ['rgba(255, 99, 132, 0.8)'],
+        }],
+      },
+      options: {
+        circumference: 2.0 * Math.PI * nDone / nGoal,
+      },
+      plugins: [{
+        afterDraw: (chart, options) => {
+          console.log(chart);
+          const width = chart.chart.width;
+          const height = chart.chart.height;
+          const ctx = chart.chart.ctx;
+
+          ctx.restore();
+          const fontSize = (height / 114).toFixed(2);
+          ctx.font = fontSize + "em Arial";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = '#000';
+
+          const text = `${nDone} / ${nGoal}`;
+          const textX = Math.round((width - ctx.measureText(text).width) / 2);
+          const textY = height / 2;
+          ctx.fillText(text, textX, textY);
+          ctx.save();
+        },
+      }],
+    });
+
+  }
+
+  getImageAsBlob() {
+    return canvasToBlob(this.el_);
+  }
+}
+
+const canvasToBlob = (canvasEl) => {
+  return new Promise((resolve, reject) => {
+    if (!canvasEl) {
+      reject("No canvas element");
+    }
+    canvasEl.toBlob(blob => {
+      resolve(blob);
+    });
+  });
 }
 
 let isInPeople = false;
