@@ -119,7 +119,11 @@ function commentsToData(comments, dayCount) {
     }
   });
 
-  const latestDt = commentsWithDt.map(c => c.dt).sort((a,b) => a < b ? 1 : -1)[0];
+  const sortedMyCommentDates = commentsWithDt
+    .filter(comment => comment.creator.id === kintone.getLoginUser().id)
+    .map(c => c.dt)
+    .sort((a,b) => a < b ? 1 : -1);
+  const latestDt = sortedMyCommentDates.length === 0 ? null : sortedMyCommentDates[0];
 
   return {daySeries, latestDt};
 }
@@ -175,9 +179,6 @@ class Popup extends Component {
     this.el_.appendChild(viewWrapper);
 
     window.setInterval(() => {
-      if (!this.latestPostDate_) {
-        return;
-      }
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
     }, 5000);
   }
@@ -276,6 +277,10 @@ class DayView extends Component {
   }
 
   updateMinuteIndicator(latestPostDate) {
+    if (latestPostDate === null) {
+      this.minuteIndicator_.innerText = `No recent people posts ever!`;
+      return;
+    }
     const min = Math.floor((new Date() - latestPostDate) / 1000 / 60);
     if (min || min === 0) {
       this.minuteIndicator_.innerText = `${min} minutes since last people post.`
