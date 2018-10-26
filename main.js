@@ -174,6 +174,10 @@ class Popup extends Component {
     return 'hidden';
   }
 
+  static get MINIMIZE_CSS_CLASS() {
+    return 'minimized';
+  }
+
   constructor(comments) {
     super();
     this.el_ = document.createElement('DIV');
@@ -181,25 +185,11 @@ class Popup extends Component {
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
     
     const viewWrapper = document.createElement('DIV');
+    viewWrapper.classList.add('minitz-view-wrapper');
     this.dayView_ = null;
     this.weekView_ = null;
     this.showDayView_ = true;
     this.latestPostDate_ = null;
-
-    const data = commentsToData(comments, DAY_COUNT);
-    const daySeries = data.daySeries;
-
-    this.dayView_ = new DayView(daySeries[0].commentCount);
-    this.latestPostDate_ = data.latestDt;
-    this.dayView_.updateMinuteIndicator(this.latestPostDate_);
-
-    this.weekView_ = new WeekView(daySeries.reverse());
-    this.dayView_.hide();
-    this.weekView_.hide();
-    this.dayView_.render(viewWrapper);
-    this.weekView_.render(viewWrapper);
-
-    this.updateViewVisibility_();
 
     this.updateView_(comments, viewWrapper);
     
@@ -210,7 +200,10 @@ class Popup extends Component {
       this.toggleView_();
       switchButton.textContent = this.showDayView_ ? 'Show Weekly Report' : 'Show Daily Report';
     });
+
+    const minimizeButton = new MinimizeButton(this);
     
+    minimizeButton.render(this.el_);
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
 
@@ -241,6 +234,14 @@ class Popup extends Component {
   toggleView_() {
     this.showDayView_ = !this.showDayView_;
     this.updateViewVisibility_();
+  }
+
+  toggleMinimize() {
+    if (this.el_.classList.contains(Popup.MINIMIZE_CSS_CLASS)) {
+      this.el_.classList.remove(Popup.MINIMIZE_CSS_CLASS);
+    } else {
+      this.el_.classList.add(Popup.MINIMIZE_CSS_CLASS);
+    }
   }
 
   updateViewVisibility_() {
@@ -291,6 +292,18 @@ class Popup extends Component {
   }
 }
 
+class MinimizeButton extends Component {
+  constructor(popup) {
+    super();
+    this.el_ = document.createElement('BUTTON');
+    this.el_.classList.add('minitz-minimize-button');
+    this.el_.innerText = 'M';
+    this.el_.addEventListener('click', async (event) => {
+      popup.toggleMinimize();
+    });
+  }
+}
+
 class ImageShareButton extends Component {
   constructor(chart) {
     super();
@@ -323,7 +336,7 @@ class TextPoster extends Component {
   constructor() {
     super();
     this.el_ = document.createElement('DIV');
-
+    this.el_.classList.add('minitz-text-poster');
 
     this.input_ = document.createElement('INPUT');
     this.input_.type = 'text';
