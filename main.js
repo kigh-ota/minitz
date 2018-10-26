@@ -86,18 +86,18 @@ class KintoneApi {
     if (myTodaysPosts.length > 0) {
       // comment to post
       const post = myTodaysPosts[0];
-      kintone.api('/k/api/people/user/comment/add', 'POST',
+      return kintone.api('/k/api/people/user/comment/add', 'POST',
         {
           body: `<div>${text}</div>`,
           mentions: [],
           groupMentions:[],
           orgMentions: [],
           postId: post.id,
-        }, console.log, console.error
+        }
       );
     } else {
       // post newly
-      KintoneApi.postTextToPeople(text);
+      return KintoneApi.postTextToPeople(text);
     }
   }
 };
@@ -186,7 +186,7 @@ class Popup extends Component {
     this.showDayView_ = true;
     this.latestPostDate_ = null;
 
-    const data = commentsToData(comments, 7);
+    const data = commentsToData(comments, DAY_COUNT);
     const daySeries = data.daySeries;
 
     this.dayView_ = new DayView(daySeries[0].commentCount);
@@ -201,9 +201,7 @@ class Popup extends Component {
 
     this.updateViewVisibility_();
 
-    KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
-      this.updateView_(comments, viewWrapper);
-    });
+    this.updateView_(comments, viewWrapper);
     
     const switchButton = document.createElement('BUTTON');
     switchButton.classList.add('minitz-switch-button');
@@ -263,7 +261,7 @@ class Popup extends Component {
       this.weekView_.remove();
     }
 
-    const data = commentsToData(comments, 7);
+    const data = commentsToData(comments, DAY_COUNT);
     const daySeries = data.daySeries;
 
     this.dayView_ = new DayView(daySeries[0].commentCount);
@@ -278,10 +276,9 @@ class Popup extends Component {
 
     this.updateViewVisibility_();
 
-    this.dayView_.addEventListener('update', (event) => {
-      KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
-        this.updateView_(comments, el);
-      });
+    this.dayView_.addEventListener('update', async (event) => {
+      await updateStoreComments();
+      this.updateView_(store.comments, el);
     });
   }
 
@@ -339,20 +336,16 @@ class TextPoster extends Component {
 
     this.form_ = document.createElement('FORM');
     this.form_.addEventListener('submit', (event) => {
+      event.preventDefault();
+
       const value = this.input_.value.trim();
       if (!value.match(/^\s*$/)) {
         // ignore when empty
-        KintoneApi.postTextToPeople(value).then(() => {
+        KintoneApi.postTextToTodaysPeople(value).then(() => {
           this.dispatchEvent(new Event('posted'));
         });
         this.input_.value = '';
       }
-
-      event.preventDefault(); 
-      
-      const p = KintoneApi.postTextToTodaysPeople(value);
-      this.input_.value = '';
-      return p;
     });
 
     this.form_.appendChild(this.input_);
@@ -510,7 +503,6 @@ class DayChart extends Component {
         },
       }],
     });
-
   }
 
   getImageAsBlob() {
@@ -533,11 +525,21 @@ function showDesktopNotification(body) {
   window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
 }
 
+async function updateStoreComments() {
+  const comments = await KintoneApi.fetchRecentPostsAndComments(DAY_COUNT);
+  store.comments = comments.map(comment => {
+    comment.dt = new Date(comment.createdAt);
+    return comment;
+  });
+  console.log('udpateStoreComments()', store.comments);
+}
+
 let isInPeople = false;
 let popup = null;
 let store = {
   comments: null,
 };
+const DAY_COUNT = 7;
 
 const onHashChange = () => {
   const code = kintone.getLoginUser().code;
@@ -553,11 +555,7 @@ const onHashChange = () => {
 };
 
 if ('onhashchange' in window) {
-  KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
-    store.comments = comments.map(comment => {
-      comment.dt = new Date(comment.createdAt);
-      return comment;
-    });
+  updateStoreComments().then(() => {
     popup = new Popup(store.comments);
     popup.render(document.body);
     window.addEventListener('hashchange', onHashChange);
