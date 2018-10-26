@@ -239,8 +239,10 @@ class Popup extends Component {
   toggleMinimize() {
     if (this.el_.classList.contains(Popup.MINIMIZE_CSS_CLASS)) {
       this.el_.classList.remove(Popup.MINIMIZE_CSS_CLASS);
+      return false;
     } else {
       this.el_.classList.add(Popup.MINIMIZE_CSS_CLASS);
+      return true;
     }
   }
 
@@ -297,9 +299,10 @@ class MinimizeButton extends Component {
     super();
     this.el_ = document.createElement('BUTTON');
     this.el_.classList.add('minitz-minimize-button');
-    this.el_.innerText = 'M';
+    this.el_.innerText = '▼';
     this.el_.addEventListener('click', async (event) => {
-      popup.toggleMinimize();
+      const minimized = popup.toggleMinimize();
+      this.el_.innerText = minimized ? '🕐' : '▼';
     });
   }
 }
