@@ -262,25 +262,30 @@ class TextPoster extends Component {
     super();
     this.el_ = document.createElement('DIV');
 
+
     this.input_ = document.createElement('INPUT');
     this.input_.type = 'text';
     this.input_.classList.add('minitz-post-text');
 
     this.button_ = document.createElement('BUTTON');
+    this.button_.type = 'submit';
     this.button_.classList.add('minitz-post-button');
     this.button_.innerText = 'POST';
-    this.button_.addEventListener('click', (event) => {
+
+    this.form_ = document.createElement('FORM');
+    this.form_.addEventListener('submit', (event) => {
       const value = this.input_.value.trim();
-      if (value.match(/^\s*$/)) {
-        return; // ignore when empty
+      if (!value.match(/^\s*$/)) {
+        // ignore when empty
+        KintoneApi.postTextToPeople(value);
+        this.input_.value = '';
       }
-      const p = KintoneApi.postTextToPeople(value);
-      this.input_.value = '';
-      return p;
+      event.preventDefault(); 
     });
 
-    this.el_.appendChild(this.input_);
-    this.el_.appendChild(this.button_);
+    this.form_.appendChild(this.input_);
+    this.form_.appendChild(this.button_);
+    this.el_.appendChild(this.form_);
   }
 }
 
