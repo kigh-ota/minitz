@@ -213,7 +213,7 @@ class Popup extends Component {
 
       const prev = this.elapsedSecondsSinceLastPost_;
       const curr = Math.floor((new Date() - this.latestPostDate_) / 1000);
-      if (this.elapsedSecondsSinceLastPost_) {
+      if (this.elapsedSecondsSinceLastPost_ && this.latestPostDate_) { // 直近n日間に投稿がなければデスクトップ通知しない
         const nextThreshold = (Math.floor(prev / 60) + 1) * 60;
 
         const NOTIFICATION_INTERVAL_MIN = 1;
