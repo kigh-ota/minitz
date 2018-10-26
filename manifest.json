@@ -9,12 +9,12 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.cybozu.com/k/",
-        "https://*.cybozu-dev.com/k/",
-        "https://*.cybozu.cn/k/",
-        "https://*.cybozu-dev.cn/k/",
-        "https://*.kintone.com/k/",
-        "https://*.kintone-dev.com/k/"
+        "https://*.cybozu.com/k/*",
+        "https://*.cybozu-dev.com/k/*",
+        "https://*.cybozu.cn/k/*",
+        "https://*.cybozu-dev.cn/k/*",
+        "https://*.kintone.com/k/*",
+        "https://*.kintone-dev.com/k/*"
       ],
       "js": ["bootstrap.js"],
       "css": ["main.css"]

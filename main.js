@@ -534,32 +534,14 @@ async function updateStoreComments() {
   console.log('udpateStoreComments()', store.comments);
 }
 
-let isInPeople = false;
 let popup = null;
 let store = {
   comments: null,
 };
 const DAY_COUNT = 7;
 
-const onHashChange = () => {
-  const code = kintone.getLoginUser().code;
-  if (!isInPeople && document.location.hash.startsWith(`#/people/user/${code}`)) {
-    console.log('enter my people page.');
-    popup.show();
-    isInPeople = true;
-  } else if (isInPeople && !document.location.hash.startsWith(`#/people/user/${code}`)) {
-    console.log('leave my people page.')
-    popup.hide();
-    isInPeople = false;
-  }
-};
-
-if ('onhashchange' in window) {
-  updateStoreComments().then(() => {
-    popup = new Popup(store.comments);
-    popup.render(document.body);
-    window.addEventListener('hashchange', onHashChange);
-    onHashChange();
-  });
-}
-
+updateStoreComments().then(() => {
+  popup = new Popup(store.comments);
+  popup.render(document.body);
+  popup.show();
+});
