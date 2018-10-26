@@ -46,35 +46,41 @@ class KintoneApi {
 
   static postImageToPeople(fileKey) {
     const threadId = kintone.getLoginUser().id;
-    kintone.api('/k/api/people/user/post/add', 'POST',
+    return kintone.api('/k/api/people/user/post/add', 'POST',
       {
         threadId,
         body: `<div><img class="cybozu-tmp-file" data-original="/k/api/blob/download.do?fileKey=${fileKey}" width="250" src="/k/api/blob/download.do?fileKey=${fileKey}&w=250" data-file="${fileKey}" data-width="250"></div>`,
         mentions: [],
         groupMentions:[],
         orgMentions: [],
-      }, console.log, console.error
+      }
     );
   }
 
   static postTextToPeople(text) {
     const threadId = kintone.getLoginUser().id;
-    kintone.api('/k/api/people/user/post/add', 'POST',
+    return kintone.api('/k/api/people/user/post/add', 'POST',
       {
         threadId,
         body: `<div>${text}</div>`,
         mentions: [],
         groupMentions:[],
         orgMentions: [],
-      }, console.log, console.error
+      }
     );
   }
 };
 
-class Component {
+class Component extends EventTarget {
   render(parentEl) {
+    this.parentEl_ = parentEl;
     parentEl.appendChild(this.el_);
   }
+
+  remove() {
+    this.parentEl_.removeChild(this.el_);
+  }
+
   show() {
     this.el_.style.display = '';
   }
@@ -154,20 +160,7 @@ class Popup extends Component {
     this.showDayView_ = true;
     this.latestPostDate_ = null;
     KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
-      const data = commentsToData(comments, 7);
-      const daySeries = data.daySeries;
-
-      this.dayView_ = new DayView(daySeries[0].commentCount);
-      this.latestPostDate_ = data.latestDt;
-      this.dayView_.updateMinuteIndicator(this.latestPostDate_);
-
-      this.weekView_ = new WeekView(daySeries.reverse());
-      this.dayView_.hide();
-      this.weekView_.hide();
-      this.dayView_.render(viewWrapper);
-      this.weekView_.render(viewWrapper);
-
-      this.updateViewVisibility_();
+      this.updateView_(comments, viewWrapper);
     });
     
     const switchButton = document.createElement('BUTTON');
@@ -218,6 +211,36 @@ class Popup extends Component {
       this.weekView_.show();
       this.dayView_.hide();
     }
+  }
+
+  updateView_(comments, el) {
+    if (this.dayView_) {
+      this.dayView_.remove();
+    }
+    if (this.weekView_) {
+      this.weekView_.remove();
+    }
+
+    const data = commentsToData(comments, 7);
+    const daySeries = data.daySeries;
+
+    this.dayView_ = new DayView(daySeries[0].commentCount);
+    this.latestPostDate_ = data.latestDt;
+    this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+
+    this.weekView_ = new WeekView(daySeries.reverse());
+    this.dayView_.hide();
+    this.weekView_.hide();
+    this.dayView_.render(el);
+    this.weekView_.render(el);
+
+    this.updateViewVisibility_();
+
+    this.dayView_.addEventListener('update', (event) => {
+      KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
+        this.updateView_(comments, el);
+      });
+    });
   }
 
   show() {
@@ -277,7 +300,9 @@ class TextPoster extends Component {
       const value = this.input_.value.trim();
       if (!value.match(/^\s*$/)) {
         // ignore when empty
-        KintoneApi.postTextToPeople(value);
+        KintoneApi.postTextToPeople(value).then(() => {
+          this.dispatchEvent(new Event('posted'));
+        });
         this.input_.value = '';
       }
       event.preventDefault(); 
@@ -297,6 +322,9 @@ class DayView extends Component {
 
     this.chart_ = new DayChart(chartData);
     this.poster_ = new TextPoster();
+    this.poster_.addEventListener('posted', (event) => {
+      this.dispatchEvent(new Event('update'));
+    });
 
     this.minuteIndicator_ = document.createElement('DIV');
     this.minuteIndicator_.classList.add('minitz-description');
