@@ -73,16 +73,13 @@ class KintoneApi {
   static postTextToTodaysPeople(text) {
     // seek today's latest post
     const now = new Date();
-    console.log(store.comments);
     const myTodaysPosts = store.comments.filter(comment => {
-      console.log(now, comment.dt);
       return comment.creator.id === kintone.getLoginUser().id && // my
         now.getFullYear() === comment.dt.getFullYear() && // today
         now.getMonth() === comment.dt.getMonth() &&
         now.getDate() === comment.dt.getDate() &&
         !!comment.threadId; // post
       }).sort((a,b) => a.dt < b.dt ? 1 : -1);
-    console.log(myTodaysPosts);
     if (myTodaysPosts.length > 0) {
       // comment to post
       const post = myTodaysPosts[0];
@@ -174,6 +171,10 @@ class Popup extends Component {
     return 'hidden';
   }
 
+  static get MINIMIZE_CSS_CLASS() {
+    return 'minimized';
+  }
+
   constructor(comments) {
     super();
     this.el_ = document.createElement('DIV');
@@ -181,25 +182,11 @@ class Popup extends Component {
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
     
     const viewWrapper = document.createElement('DIV');
+    viewWrapper.classList.add('minitz-view-wrapper');
     this.dayView_ = null;
     this.weekView_ = null;
     this.showDayView_ = true;
     this.latestPostDate_ = null;
-
-    const data = commentsToData(comments, DAY_COUNT);
-    const daySeries = data.daySeries;
-
-    this.dayView_ = new DayView(daySeries[0].commentCount);
-    this.latestPostDate_ = data.latestDt;
-    this.dayView_.updateMinuteIndicator(this.latestPostDate_);
-
-    this.weekView_ = new WeekView(daySeries.reverse());
-    this.dayView_.hide();
-    this.weekView_.hide();
-    this.dayView_.render(viewWrapper);
-    this.weekView_.render(viewWrapper);
-
-    this.updateViewVisibility_();
 
     this.updateView_(comments, viewWrapper);
     
@@ -210,7 +197,10 @@ class Popup extends Component {
       this.toggleView_();
       switchButton.textContent = this.showDayView_ ? 'Show Weekly Report' : 'Show Daily Report';
     });
+
+    const minimizeButton = new MinimizeButton(this);
     
+    minimizeButton.render(this.el_);
     this.el_.appendChild(switchButton);
     this.el_.appendChild(viewWrapper);
 
@@ -241,6 +231,14 @@ class Popup extends Component {
   toggleView_() {
     this.showDayView_ = !this.showDayView_;
     this.updateViewVisibility_();
+  }
+
+  updateMinimizedOrNot() {
+    if (store.minimized) {
+      this.el_.classList.add(Popup.MINIMIZE_CSS_CLASS);
+    } else {
+      this.el_.classList.remove(Popup.MINIMIZE_CSS_CLASS);
+    }
   }
 
   updateViewVisibility_() {
@@ -275,6 +273,7 @@ class Popup extends Component {
     this.weekView_.render(el);
 
     this.updateViewVisibility_();
+    this.updateMinimizedOrNot();
 
     this.dayView_.addEventListener('update', async (event) => {
       await updateStoreComments();
@@ -288,6 +287,24 @@ class Popup extends Component {
 
   hide() {
     this.el_.classList.add(Popup.HIDDEN_CSS_CLASS);
+  }
+}
+
+class MinimizeButton extends Component {
+  constructor(popup) {
+    super();
+    this.el_ = document.createElement('BUTTON');
+    this.el_.classList.add('minitz-minimize-button');
+    this.updateInnerText_();
+    this.el_.addEventListener('click', (event) => {
+      toggleMinimizedState();
+      popup.updateMinimizedOrNot();
+      this.updateInnerText_();
+    });
+  }
+
+  updateInnerText_() {
+    this.el_.innerText = store.minimized ? '🕐' : '▼';
   }
 }
 
@@ -323,7 +340,7 @@ class TextPoster extends Component {
   constructor() {
     super();
     this.el_ = document.createElement('DIV');
-
+    this.el_.classList.add('minitz-text-poster');
 
     this.input_ = document.createElement('INPUT');
     this.input_.type = 'text';
@@ -525,18 +542,31 @@ function showDesktopNotification(body) {
   window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
 }
 
+const LOCALSTORAGE_KEY_MINIMIZED = 'minitz-minimized';
+function getMinimizedFromLocalStorage() {
+  const val = localStorage.getItem(LOCALSTORAGE_KEY_MINIMIZED) === 'true';
+  if (!val) {
+    localStorage.setItem(LOCALSTORAGE_KEY_MINIMIZED, false);
+  }
+  return val;
+}
+function toggleMinimizedState() {
+  store.minimized = !store.minimized;
+  localStorage.setItem(LOCALSTORAGE_KEY_MINIMIZED, store.minimized);
+}
+
 async function updateStoreComments() {
   const comments = await KintoneApi.fetchRecentPostsAndComments(DAY_COUNT);
   store.comments = comments.map(comment => {
     comment.dt = new Date(comment.createdAt);
     return comment;
   });
-  console.log('udpateStoreComments()', store.comments);
 }
 
 let popup = null;
 let store = {
   comments: null,
+  minimized: getMinimizedFromLocalStorage(),
 };
 const DAY_COUNT = 7;
 

@@ -10,9 +10,39 @@
   border-left: 1px solid lightgray;
   padding: 20px;
 }
+
+.minitz-minimize-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  background-color: #ddd;
+  color: #555;
+  font-size: 24px;
+  padding: 0;
+  border: 0;
+}
+
+.minitz-popup.minimized {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+.minitz-popup.minimized .minitz-switch-button {
+  display: none;
+}
+.minitz-popup.minimized .minitz-view-wrapper {
+  display: none;
+}
+.minitz-popup.minimized .minitz-text-poster {
+  display: none;
+}
+
 .minitz-popup.hidden {
   display: none;
 }
+
 .minitz-switch-button {
   border: none;
   background: transparent;
@@ -50,3 +80,4 @@
 .minitz-description {
   font-size: 14px;
 }
+
