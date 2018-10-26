@@ -73,16 +73,13 @@ class KintoneApi {
   static postTextToTodaysPeople(text) {
     // seek today's latest post
     const now = new Date();
-    console.log(store.comments);
     const myTodaysPosts = store.comments.filter(comment => {
-      console.log(now, comment.dt);
       return comment.creator.id === kintone.getLoginUser().id && // my
         now.getFullYear() === comment.dt.getFullYear() && // today
         now.getMonth() === comment.dt.getMonth() &&
         now.getDate() === comment.dt.getDate() &&
         !!comment.threadId; // post
       }).sort((a,b) => a.dt < b.dt ? 1 : -1);
-    console.log(myTodaysPosts);
     if (myTodaysPosts.length > 0) {
       // comment to post
       const post = myTodaysPosts[0];
@@ -236,13 +233,11 @@ class Popup extends Component {
     this.updateViewVisibility_();
   }
 
-  toggleMinimize() {
-    if (this.el_.classList.contains(Popup.MINIMIZE_CSS_CLASS)) {
-      this.el_.classList.remove(Popup.MINIMIZE_CSS_CLASS);
-      return false;
-    } else {
+  updateMinimizedOrNot() {
+    if (store.minimized) {
       this.el_.classList.add(Popup.MINIMIZE_CSS_CLASS);
-      return true;
+    } else {
+      this.el_.classList.remove(Popup.MINIMIZE_CSS_CLASS);
     }
   }
 
@@ -278,6 +273,7 @@ class Popup extends Component {
     this.weekView_.render(el);
 
     this.updateViewVisibility_();
+    this.updateMinimizedOrNot();
 
     this.dayView_.addEventListener('update', async (event) => {
       await updateStoreComments();
@@ -299,11 +295,16 @@ class MinimizeButton extends Component {
     super();
     this.el_ = document.createElement('BUTTON');
     this.el_.classList.add('minitz-minimize-button');
-    this.el_.innerText = '▼';
-    this.el_.addEventListener('click', async (event) => {
-      const minimized = popup.toggleMinimize();
-      this.el_.innerText = minimized ? '🕐' : '▼';
+    this.updateInnerText_();
+    this.el_.addEventListener('click', (event) => {
+      toggleMinimizedState();
+      popup.updateMinimizedOrNot();
+      this.updateInnerText_();
     });
+  }
+
+  updateInnerText_() {
+    this.el_.innerText = store.minimized ? '🕐' : '▼';
   }
 }
 
@@ -541,18 +542,31 @@ function showDesktopNotification(body) {
   window.postMessage({ type: 'MINITZ_DESKTOP_NTF_REQUEST', body }, '*');
 }
 
+const LOCALSTORAGE_KEY_MINIMIZED = 'minitz-minimized';
+function getMinimizedFromLocalStorage() {
+  const val = localStorage.getItem(LOCALSTORAGE_KEY_MINIMIZED) === 'true';
+  if (!val) {
+    localStorage.setItem(LOCALSTORAGE_KEY_MINIMIZED, false);
+  }
+  return val;
+}
+function toggleMinimizedState() {
+  store.minimized = !store.minimized;
+  localStorage.setItem(LOCALSTORAGE_KEY_MINIMIZED, store.minimized);
+}
+
 async function updateStoreComments() {
   const comments = await KintoneApi.fetchRecentPostsAndComments(DAY_COUNT);
   store.comments = comments.map(comment => {
     comment.dt = new Date(comment.createdAt);
     return comment;
   });
-  console.log('udpateStoreComments()', store.comments);
 }
 
 let popup = null;
 let store = {
   comments: null,
+  minimized: getMinimizedFromLocalStorage(),
 };
 const DAY_COUNT = 7;
 
