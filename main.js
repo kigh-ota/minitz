@@ -206,21 +206,20 @@ class Popup extends Component {
 
     this.elapsedSecondsSinceLastPost_ = null;
 
-    window.setInterval(() => {
+    window.setInterval(async () => {
       this.dayView_.updateMinuteIndicator(this.latestPostDate_);
 
       const prev = this.elapsedSecondsSinceLastPost_;
       const curr = Math.floor((new Date() - this.latestPostDate_) / 1000);
-      if (this.elapsedSecondsSinceLastPost_ && this.latestPostDate_) { // 直近n日間に投稿がなければデスクトップ通知しない
-        const nextThreshold = (Math.floor(prev / 60) + 1) * 60;
-
-        const NOTIFICATION_INTERVAL_MIN = 1;
-        const NOTIFICATION_AFTER_MIN = 30;
-
-        if (curr > NOTIFICATION_AFTER_MIN * 60) {
-          if (curr >= nextThreshold) {
+      if (this.elapsedSecondsSinceLastPost_) {
+        const nextThreshold = (Math.floor(prev / 60) + NOTIFICATION_INTERVAL_MIN) * 60;
+        if (curr >= nextThreshold) {
+          // n分おきに
+          if (curr > NOTIFICATION_AFTER_MIN * 60 && this.latestPostDate_) {  // 直近n日間に投稿がなければデスクトップ通知しない
             showDesktopNotification(`${nextThreshold / 60}分間何も書いていません。分報を書いてはいかが？`);
           }
+          await updateStoreComments();
+          this.updateView_(store.comments, viewWrapper);
         }
       }
       this.elapsedSecondsSinceLastPost_ = curr;
@@ -396,7 +395,7 @@ class DayView extends Component {
       this.minuteIndicator_.innerText = `No recent people posts ever!`;
       return;
     }
-    const min = Math.floor((new Date() - latestPostDate) / 1000 / 60);
+    const min = Math.max(Math.floor((new Date() - latestPostDate) / 1000 / 60), 0); // 投稿直後負になる突貫対応
     if (min || min === 0) {
       this.minuteIndicator_.innerText = `${min} minutes since last people post.`
     }
@@ -569,6 +568,8 @@ let store = {
   minimized: getMinimizedFromLocalStorage(),
 };
 const DAY_COUNT = 7;
+const NOTIFICATION_INTERVAL_MIN = 1;
+const NOTIFICATION_AFTER_MIN = 30;
 
 updateStoreComments().then(() => {
   popup = new Popup(store.comments);
