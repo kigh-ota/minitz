@@ -16,7 +16,7 @@
 .minitz-switch-button {
   border: none;
   background: transparent;
-  font-size: .8em;
+  font-size: 13px;
   color: #426FC5;
   float: right;
 }
@@ -28,13 +28,13 @@
   margin-top: 8px;
 }
 .minitz-post-button, .minitz-share-button {
-  font-size: .8em;
-  border-radius: 8em;
+  font-size: 13px;
+  border-radius: 16px;
   background-color: #426FC5;
   border: none;
   color: white;
   padding: 0;
-  height: 2.4em;
+  height: 32px;
 }
 .minitz-post-button:hover, .minitz-share-button:hover {
   opacity: .8;
@@ -48,5 +48,5 @@
   width: 240px;
 }
 .minitz-description {
-  font-size: .9em;
+  font-size: 14px;
 }
