@@ -29,9 +29,9 @@ class KintoneApi {
     const formData = new FormData();
     formData.append('__REQUEST_TOKEN__', kintone.getRequestToken());
     formData.append('file', blob, 'hoge.png');
-    
+
     const url = kintone.api.url('/k/v1/file');
-    
+
     return fetch(url, {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -69,6 +69,37 @@ class KintoneApi {
       }
     );
   }
+
+  static postTextToTodaysPeople(text) {
+    // seek today's latest post
+    const now = new Date();
+    console.log(store.comments);
+    const myTodaysPosts = store.comments.filter(comment => {
+      console.log(now, comment.dt);
+      return comment.creator.id === kintone.getLoginUser().id && // my
+        now.getFullYear() === comment.dt.getFullYear() && // today
+        now.getMonth() === comment.dt.getMonth() &&
+        now.getDate() === comment.dt.getDate() &&
+        !!comment.threadId; // post
+      }).sort((a,b) => a.dt < b.dt ? 1 : -1);
+    console.log(myTodaysPosts);
+    if (myTodaysPosts.length > 0) {
+      // comment to post
+      const post = myTodaysPosts[0];
+      kintone.api('/k/api/people/user/comment/add', 'POST',
+        {
+          body: `<div>${text}</div>`,
+          mentions: [],
+          groupMentions:[],
+          orgMentions: [],
+          postId: post.id,
+        }, console.log, console.error
+      );
+    } else {
+      // post newly
+      KintoneApi.postTextToPeople(text);
+    }
+  }
 };
 
 class Component extends EventTarget {
@@ -94,11 +125,6 @@ function commentsToData(comments, dayCount) {
   const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-  const commentsWithDt = comments.map(comment => {
-    comment.dt = new Date(comment.createdAt);
-    return comment;
-  });
-
   // daySeries[n]: n日前
   let daySeries = [...Array(dayCount).keys()].map(i => {
     const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
@@ -110,7 +136,7 @@ function commentsToData(comments, dayCount) {
       likedCount: 0,
     }
   });
-  commentsWithDt.forEach(comment => {
+  comments.forEach(comment => {
     if (new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayCount + 1) <= comment.dt) {
       const i = Math.floor((tomorrow - comment.dt) / 1000 / 60 / 60 / 24);
       if (comment.creator.id === kintone.getLoginUser().id) {
@@ -125,7 +151,7 @@ function commentsToData(comments, dayCount) {
     }
   });
 
-  const sortedMyCommentDates = commentsWithDt
+  const sortedMyCommentDates = comments
     .filter(comment => comment.creator.id === kintone.getLoginUser().id)
     .map(c => c.dt)
     .sort((a,b) => a < b ? 1 : -1);
@@ -148,7 +174,7 @@ class Popup extends Component {
     return 'hidden';
   }
 
-  constructor() {
+  constructor(comments) {
     super();
     this.el_ = document.createElement('DIV');
     this.el_.classList.add(Popup.CSS_CLASS);
@@ -159,6 +185,22 @@ class Popup extends Component {
     this.weekView_ = null;
     this.showDayView_ = true;
     this.latestPostDate_ = null;
+
+    const data = commentsToData(comments, 7);
+    const daySeries = data.daySeries;
+
+    this.dayView_ = new DayView(daySeries[0].commentCount);
+    this.latestPostDate_ = data.latestDt;
+    this.dayView_.updateMinuteIndicator(this.latestPostDate_);
+
+    this.weekView_ = new WeekView(daySeries.reverse());
+    this.dayView_.hide();
+    this.weekView_.hide();
+    this.dayView_.render(viewWrapper);
+    this.weekView_.render(viewWrapper);
+
+    this.updateViewVisibility_();
+
     KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
       this.updateView_(comments, viewWrapper);
     });
@@ -181,7 +223,7 @@ class Popup extends Component {
 
       const prev = this.elapsedSecondsSinceLastPost_;
       const curr = Math.floor((new Date() - this.latestPostDate_) / 1000);
-      if (this.elapsedSecondsSinceLastPost_) {
+      if (this.elapsedSecondsSinceLastPost_ && this.latestPostDate_) { // 直近n日間に投稿がなければデスクトップ通知しない
         const nextThreshold = (Math.floor(prev / 60) + 1) * 60;
 
         const NOTIFICATION_INTERVAL_MIN = 1;
@@ -305,7 +347,12 @@ class TextPoster extends Component {
         });
         this.input_.value = '';
       }
+
       event.preventDefault(); 
+      
+      const p = KintoneApi.postTextToTodaysPeople(value);
+      this.input_.value = '';
+      return p;
     });
 
     this.form_.appendChild(this.input_);
@@ -445,7 +492,6 @@ class DayChart extends Component {
       },
       plugins: [{
         afterDraw: (chart, options) => {
-          console.log(chart);
           const width = chart.chart.width;
           const height = chart.chart.height;
           const ctx = chart.chart.ctx;
@@ -489,6 +535,9 @@ function showDesktopNotification(body) {
 
 let isInPeople = false;
 let popup = null;
+let store = {
+  comments: null,
+};
 
 const onHashChange = () => {
   const code = kintone.getLoginUser().code;
@@ -504,9 +553,15 @@ const onHashChange = () => {
 };
 
 if ('onhashchange' in window) {
-  popup = new Popup();
-  popup.render(document.body);
-  window.addEventListener('hashchange', onHashChange);
-  onHashChange();
+  KintoneApi.fetchRecentPostsAndComments(7).then(comments => {
+    store.comments = comments.map(comment => {
+      comment.dt = new Date(comment.createdAt);
+      return comment;
+    });
+    popup = new Popup(store.comments);
+    popup.render(document.body);
+    window.addEventListener('hashchange', onHashChange);
+    onHashChange();
+  });
 }
 
